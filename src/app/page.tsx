@@ -20,7 +20,7 @@ export default function LoginPage() {
     const success = await login(name, password);
 
     if (success) {
-      router.push('/dashboard');
+      router.push('/home');
     } else {
       setError('名前またはパスワードが正しくありません');
     }
