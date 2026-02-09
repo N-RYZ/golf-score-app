@@ -44,11 +44,11 @@ export default function ScoreInputPage() {
   const [scores, setScores] = useState<Record<string, ScoreData>>({});
   const [saving, setSaving] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [showAttest, setShowAttest] = useState(false);
+  const [attestType, setAttestType] = useState<'front' | 'full' | null>(null);
 
   const prevUserRef = useRef<string>('');
   const prevHoleRef = useRef<number>(1);
-  const [showFooter, setShowFooter] = useState(false);
-  const footerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // スコアのキー
   const scoreKey = (userId: string, holeNumber: number) => `${userId}-${holeNumber}`;
@@ -139,24 +139,6 @@ export default function ScoreInputPage() {
       );
     }
   }, [selectedUserId, currentHole, eventId]);
-
-  // フッター表示制御（スクロール/タッチ時に表示、一定時間後に非表示）
-  useEffect(() => {
-    const showFooterTemporarily = () => {
-      setShowFooter(true);
-      if (footerTimerRef.current) clearTimeout(footerTimerRef.current);
-      footerTimerRef.current = setTimeout(() => setShowFooter(false), 3000);
-    };
-
-    window.addEventListener('scroll', showFooterTemporarily, { passive: true });
-    window.addEventListener('touchmove', showFooterTemporarily, { passive: true });
-
-    return () => {
-      window.removeEventListener('scroll', showFooterTemporarily);
-      window.removeEventListener('touchmove', showFooterTemporarily);
-      if (footerTimerRef.current) clearTimeout(footerTimerRef.current);
-    };
-  }, []);
 
   // オンライン状態監視
   useEffect(() => {
@@ -271,11 +253,61 @@ export default function ScoreInputPage() {
       if (selectedUserId) {
         saveScore(selectedUserId, currentHole);
       }
+
+      // 9H終了後（10Hに進む前）にアテスト画面を表示
+      if (currentHole === 9 && newHole === 10) {
+        setAttestType('front');
+        setShowAttest(true);
+        return; // アテスト確認後に10Hに進む
+      }
+
+      // 18H終了後にアテスト画面を表示
+      if (currentHole === 18 && newHole === 19) {
+        setAttestType('full');
+        setShowAttest(true);
+        return; // アテスト確認後に完了
+      }
+
       prevHoleRef.current = newHole;
       setCurrentHole(newHole);
     },
     [saveScore, selectedUserId, currentHole]
   );
+
+  // アテスト確認OK
+  const handleAttestConfirm = () => {
+    setShowAttest(false);
+    if (attestType === 'front') {
+      // 9H終了後 → 10Hに進む
+      setCurrentHole(10);
+    } else if (attestType === 'full') {
+      // 18H終了 → イベント一覧に戻る
+      window.location.href = '/events';
+    }
+    setAttestType(null);
+  };
+
+  // アテスト修正
+  const handleAttestEdit = (holeNumber: number) => {
+    setShowAttest(false);
+    setCurrentHole(holeNumber);
+    setAttestType(null);
+  };
+
+  // スコア集計（指定範囲のストローク・パット合計）
+  const calculateTotal = (userId: string, startHole: number, endHole: number) => {
+    let totalStrokes = 0;
+    let totalPutts = 0;
+    for (let h = startHole; h <= endHole; h++) {
+      const key = scoreKey(userId, h);
+      const score = scores[key];
+      if (score) {
+        totalStrokes += score.strokes || 0;
+        totalPutts += score.putts || 0;
+      }
+    }
+    return { strokes: totalStrokes, putts: totalPutts };
+  };
 
   // スコア値の更新
   const updateScore = (field: 'strokes' | 'putts', delta: number) => {
@@ -338,6 +370,196 @@ export default function ScoreInputPage() {
 
   const diffLabel = getDiffLabel(currentScore.strokes, currentPar);
   const diff = currentScore.strokes > 0 ? currentScore.strokes - currentPar : 0;
+
+  // アテストモーダルの表示内容
+  const renderAttestModal = () => {
+    if (!showAttest || !attestType) return null;
+
+    const isFront = attestType === 'front';
+    const startHole = isFront ? 1 : 1;
+    const midHole = 9;
+    const endHole = isFront ? 9 : 18;
+    const displayHoles = isFront ? Array.from({ length: 9 }, (_, i) => i + 1) : Array.from({ length: 18 }, (_, i) => i + 1);
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-auto">
+          <div className="p-4 border-b border-gray-200 sticky top-0 bg-white">
+            <h2 className="text-lg font-bold text-gray-900">
+              {isFront ? '前半9ホール アテスト' : '18ホール アテスト'}
+            </h2>
+          </div>
+
+          <div className="p-3 overflow-x-auto">
+            {/* スコアカード表 */}
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-300 px-1 py-1 font-bold text-left sticky left-0 bg-gray-100">名前</th>
+                  {displayHoles.map((h) => (
+                    <th key={h} className="border border-gray-300 px-1 py-1 font-bold text-center min-w-[32px]">
+                      {h}
+                    </th>
+                  ))}
+                  {isFront && <th className="border border-gray-300 px-1 py-1 font-bold text-center bg-yellow-50">OUT</th>}
+                  {!isFront && (
+                    <>
+                      <th className="border border-gray-300 px-1 py-1 font-bold text-center bg-yellow-50">OUT</th>
+                      <th className="border border-gray-300 px-1 py-1 font-bold text-center bg-blue-50">IN</th>
+                      <th className="border border-gray-300 px-1 py-1 font-bold text-center bg-green-50">計</th>
+                    </>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {/* PAR行 */}
+                <tr className="bg-gray-50">
+                  <td className="border border-gray-300 px-1 py-1 font-semibold sticky left-0 bg-gray-50">PAR</td>
+                  {displayHoles.map((h) => {
+                    const holePar = holes.find((hole) => hole.hole_number === h)?.par || 4;
+                    return (
+                      <td key={h} className="border border-gray-300 px-1 py-1 text-center font-semibold">
+                        {holePar}
+                      </td>
+                    );
+                  })}
+                  {isFront && (
+                    <td className="border border-gray-300 px-1 py-1 text-center font-semibold bg-yellow-50">
+                      {holes.slice(0, 9).reduce((sum, h) => sum + h.par, 0)}
+                    </td>
+                  )}
+                  {!isFront && (
+                    <>
+                      <td className="border border-gray-300 px-1 py-1 text-center font-semibold bg-yellow-50">
+                        {holes.slice(0, 9).reduce((sum, h) => sum + h.par, 0)}
+                      </td>
+                      <td className="border border-gray-300 px-1 py-1 text-center font-semibold bg-blue-50">
+                        {holes.slice(9, 18).reduce((sum, h) => sum + h.par, 0)}
+                      </td>
+                      <td className="border border-gray-300 px-1 py-1 text-center font-semibold bg-green-50">
+                        {holes.reduce((sum, h) => sum + h.par, 0)}
+                      </td>
+                    </>
+                  )}
+                </tr>
+
+                {/* メンバーごとのストローク */}
+                {groupMembers.map((member) => {
+                  const outTotal = calculateTotal(member.user_id, 1, 9);
+                  const inTotal = calculateTotal(member.user_id, 10, 18);
+                  const fullTotal = { strokes: outTotal.strokes + inTotal.strokes, putts: outTotal.putts + inTotal.putts };
+
+                  return (
+                    <tr key={member.user_id} className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-1 py-1 font-semibold sticky left-0 bg-white">
+                        {member.users.name}
+                      </td>
+                      {displayHoles.map((h) => {
+                        const score = scores[scoreKey(member.user_id, h)];
+                        const holePar = holes.find((hole) => hole.hole_number === h)?.par || 4;
+                        const strokeVal = score?.strokes || 0;
+                        const diffVal = strokeVal - holePar;
+                        let bgColor = '';
+                        if (strokeVal > 0) {
+                          if (diffVal <= -2) bgColor = 'bg-blue-200';
+                          else if (diffVal === -1) bgColor = 'bg-blue-100';
+                          else if (diffVal === 0) bgColor = 'bg-white';
+                          else if (diffVal === 1) bgColor = 'bg-orange-100';
+                          else if (diffVal >= 2) bgColor = 'bg-red-100';
+                        }
+                        return (
+                          <td
+                            key={h}
+                            onClick={() => handleAttestEdit(h)}
+                            className={`border border-gray-300 px-1 py-1 text-center cursor-pointer hover:ring-2 hover:ring-green-600 ${bgColor}`}
+                          >
+                            {strokeVal > 0 ? strokeVal : '-'}
+                          </td>
+                        );
+                      })}
+                      {isFront && (
+                        <td className="border border-gray-300 px-1 py-1 text-center font-bold bg-yellow-50">
+                          {outTotal.strokes > 0 ? outTotal.strokes : '-'}
+                        </td>
+                      )}
+                      {!isFront && (
+                        <>
+                          <td className="border border-gray-300 px-1 py-1 text-center font-bold bg-yellow-50">
+                            {outTotal.strokes > 0 ? outTotal.strokes : '-'}
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1 text-center font-bold bg-blue-50">
+                            {inTotal.strokes > 0 ? inTotal.strokes : '-'}
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1 text-center font-bold bg-green-50">
+                            {fullTotal.strokes > 0 ? fullTotal.strokes : '-'}
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  );
+                })}
+
+                {/* パット行 */}
+                {groupMembers.map((member) => {
+                  const outTotal = calculateTotal(member.user_id, 1, 9);
+                  const inTotal = calculateTotal(member.user_id, 10, 18);
+                  const fullTotal = { strokes: outTotal.strokes + inTotal.strokes, putts: outTotal.putts + inTotal.putts };
+
+                  return (
+                    <tr key={`putt-${member.user_id}`} className="text-gray-600 text-xs">
+                      <td className="border border-gray-300 px-1 py-0.5 text-xs sticky left-0 bg-gray-50">
+                        <span className="text-[10px]">P</span>
+                      </td>
+                      {displayHoles.map((h) => {
+                        const score = scores[scoreKey(member.user_id, h)];
+                        const puttVal = score?.putts || 0;
+                        return (
+                          <td
+                            key={h}
+                            onClick={() => handleAttestEdit(h)}
+                            className="border border-gray-300 px-1 py-0.5 text-center cursor-pointer hover:ring-2 hover:ring-green-600 bg-gray-50"
+                          >
+                            {puttVal > 0 ? puttVal : '-'}
+                          </td>
+                        );
+                      })}
+                      {isFront && (
+                        <td className="border border-gray-300 px-1 py-0.5 text-center font-bold bg-yellow-100">
+                          {outTotal.putts > 0 ? outTotal.putts : '-'}
+                        </td>
+                      )}
+                      {!isFront && (
+                        <>
+                          <td className="border border-gray-300 px-1 py-0.5 text-center font-bold bg-yellow-100">
+                            {outTotal.putts > 0 ? outTotal.putts : '-'}
+                          </td>
+                          <td className="border border-gray-300 px-1 py-0.5 text-center font-bold bg-blue-100">
+                            {inTotal.putts > 0 ? inTotal.putts : '-'}
+                          </td>
+                          <td className="border border-gray-300 px-1 py-0.5 text-center font-bold bg-green-100">
+                            {fullTotal.putts > 0 ? fullTotal.putts : '-'}
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="p-4 border-t border-gray-200 flex gap-2 sticky bottom-0 bg-white">
+            <button
+              onClick={handleAttestConfirm}
+              className="flex-1 py-3 px-4 bg-[#166534] text-white font-bold rounded hover:bg-[#14532d] active:bg-[#14532d]"
+            >
+              {isFront ? '確認OK（後半へ）' : '確認OK（完了）'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-gray-50 select-none">
@@ -456,24 +678,8 @@ export default function ScoreInputPage() {
         </button>
       </div>
 
-      {/* 5. フッターナビ（スクロール時のみ表示） */}
-      <nav className={`bg-[#166534] flex justify-around items-center h-14 fixed bottom-0 left-0 right-0 transition-transform duration-300 ${showFooter ? 'translate-y-0' : 'translate-y-full'}`}>
-        <Link href="/home" className="flex items-center justify-center w-full h-full text-white opacity-60">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-          </svg>
-        </Link>
-        <Link href="/events" className="flex items-center justify-center w-full h-full text-white opacity-100">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-          </svg>
-        </Link>
-        <Link href="/annual" className="flex items-center justify-center w-full h-full text-white opacity-60">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
-          </svg>
-        </Link>
-      </nav>
+      {/* アテストモーダル */}
+      {renderAttestModal()}
     </div>
   );
 }

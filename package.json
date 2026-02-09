@@ -11,6 +11,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",
     "bcryptjs": "^3.0.3",
+    "dotenv": "^17.2.4",
     "global-agent": "^4.1.2",
     "next": "16.1.6",
     "react": "19.2.3",
