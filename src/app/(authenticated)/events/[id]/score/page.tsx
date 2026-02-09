@@ -585,68 +585,80 @@ export default function ScoreInputPage() {
       </div>
 
       {/* 2. 打数エリア */}
-      <div className="flex-1 flex flex-col justify-center items-center bg-green-50 px-4">
-        <span className="text-sm font-bold text-gray-600 mb-2">打数</span>
-        <div className="flex items-center justify-center gap-6 w-full">
-          <button
-            onClick={() => updateScore('strokes', -1)}
-            className="w-[min(64px,16vw)] h-[min(64px,16vw)] rounded-full border-2 border-gray-300 bg-white flex items-center justify-center active:bg-gray-100"
-          >
-            <span className="text-[min(32px,8vw)] leading-none text-gray-500">
-              −
-            </span>
-          </button>
+      <div className="flex-1 flex" style={{ backgroundColor: '#F5E6B3' }}>
+        {/* マイナスエリア */}
+        <button
+          onClick={() => updateScore('strokes', -1)}
+          className="flex-1 flex items-center justify-center border-r-2 active:opacity-80"
+          style={{ backgroundColor: '#FAF3D7', borderRightColor: '#E8D49A' }}
+        >
+          <span className="text-[min(80px,20vw)] leading-none font-light" style={{ color: '#8B7000' }}>
+            −
+          </span>
+        </button>
+
+        {/* 打数表示エリア */}
+        <div className="flex-1 flex flex-col items-center justify-center" style={{ backgroundColor: '#F5E6B3' }}>
+          <span className="text-sm font-bold mb-2" style={{ color: '#3A2800' }}>打数</span>
           <span
-            className="font-bold text-gray-900 min-w-[80px] text-center"
-            style={{ fontSize: 'min(80px, 20vw)' }}
+            className="font-bold"
+            style={{ fontSize: 'min(100px, 25vw)', color: '#1A0800' }}
           >
             {currentScore.strokes}
           </span>
-          <button
-            onClick={() => updateScore('strokes', 1)}
-            className="w-[min(72px,18vw)] h-[min(72px,18vw)] rounded-full bg-[#166534] flex items-center justify-center active:bg-[#14532d]"
+          <span
+            className={`text-sm font-bold mt-1 ${
+              diff > 0 ? 'text-red-600' : diff < 0 ? 'text-blue-600' : 'text-green-700'
+            }`}
           >
-            <span className="text-[min(36px,9vw)] leading-none text-white font-bold">
-              +
-            </span>
-          </button>
+            {currentScore.strokes > 0 && diff !== 0 ? `${diff > 0 ? '+' : ''}${diff}` : ''}
+          </span>
         </div>
-        <span
-          className={`text-sm font-bold mt-1 min-h-[20px] ${
-            diff > 0 ? 'text-red-600' : diff < 0 ? 'text-blue-600' : 'text-green-700'
-          }`}
+
+        {/* プラスエリア */}
+        <button
+          onClick={() => updateScore('strokes', 1)}
+          className="flex-1 flex items-center justify-center border-l-2 active:opacity-90"
+          style={{ backgroundColor: '#D0A900', borderLeftColor: '#B89300' }}
         >
-          {diffLabel ? (diff !== 0 ? `${diff > 0 ? '+' : ''}${diff} ${diffLabel}` : diffLabel) : ''}
-        </span>
+          <span className="text-[min(80px,20vw)] leading-none text-white font-bold">
+            +
+          </span>
+        </button>
       </div>
 
       {/* 3. パットエリア */}
-      <div className="flex-1 flex flex-col justify-center items-center bg-white px-4">
-        <span className="text-sm font-bold text-gray-600 mb-2">パット</span>
-        <div className="flex items-center justify-center gap-6 w-full">
-          <button
-            onClick={() => updateScore('putts', -1)}
-            className="w-[min(64px,16vw)] h-[min(64px,16vw)] rounded-full border-2 border-gray-300 bg-white flex items-center justify-center active:bg-gray-100"
-          >
-            <span className="text-[min(32px,8vw)] leading-none text-gray-500">
-              −
-            </span>
-          </button>
+      <div className="flex-1 flex bg-green-50">
+        {/* マイナスエリア */}
+        <button
+          onClick={() => updateScore('putts', -1)}
+          className="flex-1 flex items-center justify-center bg-white border-r-2 border-gray-200 active:bg-gray-100"
+        >
+          <span className="text-[min(80px,20vw)] leading-none text-gray-500 font-light">
+            −
+          </span>
+        </button>
+
+        {/* パット数表示エリア */}
+        <div className="flex-1 flex flex-col items-center justify-center bg-green-50">
+          <span className="text-sm font-bold text-gray-600 mb-2">パット</span>
           <span
-            className="font-bold text-gray-900 min-w-[80px] text-center"
-            style={{ fontSize: 'min(80px, 20vw)' }}
+            className="font-bold text-gray-900"
+            style={{ fontSize: 'min(100px, 25vw)' }}
           >
             {currentScore.putts}
           </span>
-          <button
-            onClick={() => updateScore('putts', 1)}
-            className="w-[min(72px,18vw)] h-[min(72px,18vw)] rounded-full bg-gray-600 flex items-center justify-center active:bg-gray-700"
-          >
-            <span className="text-[min(36px,9vw)] leading-none text-white font-bold">
-              +
-            </span>
-          </button>
         </div>
+
+        {/* プラスエリア */}
+        <button
+          onClick={() => updateScore('putts', 1)}
+          className="flex-1 flex items-center justify-center bg-[#166534] border-l-2 border-[#14532d] active:bg-[#14532d]"
+        >
+          <span className="text-[min(80px,20vw)] leading-none text-white font-bold">
+            +
+          </span>
+        </button>
       </div>
 
       {/* 4. ホール番号ナビ */}
