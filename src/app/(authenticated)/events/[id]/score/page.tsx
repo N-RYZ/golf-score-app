@@ -607,7 +607,7 @@ export default function ScoreInputPage() {
             {currentScore.strokes}
           </span>
           <span
-            className={`text-sm font-bold mt-1 ${
+            className={`text-sm font-bold mt-1 min-h-[20px] ${
               diff > 0 ? 'text-red-600' : diff < 0 ? 'text-blue-600' : 'text-green-700'
             }`}
           >
