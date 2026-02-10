@@ -22,6 +22,18 @@ type PlayerStats = {
   event_scores: EventScore[];
 };
 
+type PointRanking = {
+  rank: number;
+  player_id: string;
+  player_name: string;
+  gender: string;
+  birth_year: number | null;
+  initial_handicap: number;
+  current_handicap: number;
+  total_points: number;
+  participation_count: number;
+};
+
 type AnnualData = {
   year: number;
   events: { id: string; name: string; event_date: string }[];
@@ -29,13 +41,14 @@ type AnnualData = {
   penalties: PlayerStats[];
 };
 
-type Tab = 'ranking' | 'penalties';
+type Tab = 'points' | 'penalties';
 
 export default function AnnualPage() {
   const [data, setData] = useState<AnnualData | null>(null);
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [pointRankings, setPointRankings] = useState<PointRanking[]>([]);
+  const [year, setYear] = useState(2026);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<Tab>('ranking');
+  const [tab, setTab] = useState<Tab>('points');
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -47,9 +60,17 @@ export default function AnnualPage() {
     setLoading(false);
   }, [year]);
 
+  const fetchPointRankings = useCallback(async () => {
+    const res = await fetch(`/api/rankings/annual?year=${year}`);
+    if (res.ok) {
+      setPointRankings(await res.json());
+    }
+  }, [year]);
+
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    fetchPointRankings();
+  }, [fetchData, fetchPointRankings]);
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -83,7 +104,7 @@ export default function AnnualPage() {
         {/* タブ */}
         <div className="flex border-b border-gray-200">
           {([
-            ['ranking', 'ランキング'],
+            ['points', 'ポイントランキング'],
             ['penalties', '罰金累計'],
           ] as [Tab, string][]).map(([key, label]) => (
             <button
@@ -102,12 +123,73 @@ export default function AnnualPage() {
 
         {loading ? (
           <p className="text-gray-500 text-sm">読み込み中...</p>
-        ) : !data || data.rankings.length === 0 ? (
-          <p className="text-gray-500 text-sm">{year}年の成績データがありません</p>
         ) : (
           <>
-            {/* ランキングタブ */}
-            {tab === 'ranking' && (
+            {/* ポイントランキングタブ */}
+            {tab === 'points' && (
+              <div className="space-y-2">
+                {pointRankings.length === 0 ? (
+                  <p className="text-gray-500 text-sm">{year}年の成績データがありません</p>
+                ) : (
+                  pointRankings.map((ranking) => (
+                    <div key={ranking.player_id} className="bg-white rounded-lg shadow p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                              ranking.rank === 1
+                                ? 'bg-yellow-400 text-yellow-900'
+                                : ranking.rank === 2
+                                ? 'bg-gray-300 text-gray-800'
+                                : ranking.rank === 3
+                                ? 'bg-orange-300 text-orange-900'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {ranking.rank}
+                          </span>
+                          <div>
+                            <p className="font-bold text-gray-800">{ranking.player_name}</p>
+                            <p className="text-xs text-gray-500">
+                              {ranking.participation_count}回参加
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-green-600">
+                            {ranking.total_points}
+                          </p>
+                          <p className="text-xs text-gray-500">ポイント</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-4 mt-3 text-xs">
+                        <div>
+                          <span className="text-gray-500">初期HC: </span>
+                          <span className="font-medium text-gray-800">
+                            {ranking.initial_handicap.toFixed(1)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">現在HC: </span>
+                          <span className={`font-bold ${
+                            ranking.current_handicap < ranking.initial_handicap
+                              ? 'text-red-600'
+                              : 'text-gray-800'
+                          }`}>
+                            {ranking.current_handicap.toFixed(1)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* 罰金累計タブ */}
+            {tab === 'penalties' && !data ? (
+              <p className="text-gray-500 text-sm">{year}年の成績データがありません</p>
+            ) : tab === 'penalties' && data && (
               <div className="space-y-2">
                 {data.rankings.map((player, index) => (
                   <div key={player.user_id}>
@@ -175,7 +257,7 @@ export default function AnnualPage() {
             )}
 
             {/* 罰金累計タブ */}
-            {tab === 'penalties' && (
+            {tab === 'penalties' && data && data.penalties && (
               <div className="space-y-2">
                 {data.penalties.map((player) => (
                   <div key={player.user_id}>

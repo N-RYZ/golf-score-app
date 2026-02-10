@@ -34,6 +34,8 @@ type EventDetail = {
   name: string;
   event_date: string;
   status: string;
+  event_type?: string;
+  is_finalized?: boolean;
   courses: {
     id: string;
     name: string;
@@ -44,7 +46,19 @@ type EventDetail = {
   scores: Score[];
 };
 
-type Tab = 'scores' | 'groups' | 'penalties';
+type EventResult = {
+  rank: number;
+  player_id: string;
+  players: { name: string };
+  gross_score: number;
+  net_score: number;
+  points: number;
+  handicap_before: number;
+  handicap_after: number;
+  under_par_strokes: number;
+};
+
+type Tab = 'scores' | 'groups' | 'penalties' | 'results';
 
 export default function EventDetailPage() {
   const { user } = useAuth();
@@ -53,7 +67,9 @@ export default function EventDetailPage() {
   const eventId = params.id as string;
 
   const [event, setEvent] = useState<EventDetail | null>(null);
+  const [results, setResults] = useState<EventResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [finalizing, setFinalizing] = useState(false);
   const [tab, setTab] = useState<Tab>('scores');
 
   const fetchEvent = useCallback(async () => {
@@ -64,9 +80,46 @@ export default function EventDetailPage() {
     setLoading(false);
   }, [eventId]);
 
+  const fetchResults = useCallback(async () => {
+    const res = await fetch(`/api/events/${eventId}/finalize`);
+    if (res.ok) {
+      setResults(await res.json());
+    }
+  }, [eventId]);
+
   useEffect(() => {
     fetchEvent();
   }, [fetchEvent]);
+
+  useEffect(() => {
+    if (event?.is_finalized) {
+      fetchResults();
+    }
+  }, [event, fetchResults]);
+
+  const handleFinalize = async () => {
+    if (!confirm('イベントを確定しますか？\n確定後は順位・ポイント・ハンデが計算され、変更できません。')) {
+      return;
+    }
+
+    setFinalizing(true);
+    const res = await fetch(`/api/events/${eventId}/finalize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user?.id })
+    });
+
+    if (res.ok) {
+      alert('イベントを確定しました');
+      fetchEvent();
+      fetchResults();
+      setTab('results');
+    } else {
+      const data = await res.json();
+      alert(`確定に失敗しました: ${data.error}`);
+    }
+    setFinalizing(false);
+  };
 
   if (loading) {
     return (
@@ -164,12 +217,26 @@ export default function EventDetailPage() {
         </div>
       )}
 
+      {/* イベント確定ボタン（管理者のみ、未確定の場合のみ表示） */}
+      {user?.role === 'admin' && !event.is_finalized && (
+        <div className="px-4 pt-3">
+          <button
+            onClick={handleFinalize}
+            disabled={finalizing}
+            className="block w-full bg-orange-600 text-white text-center py-3 rounded-lg font-bold hover:bg-orange-700 disabled:bg-gray-400"
+          >
+            {finalizing ? '確定中...' : 'イベント確定（順位・ポイント・ハンデ計算）'}
+          </button>
+        </div>
+      )}
+
       {/* タブ */}
       <div className="flex border-b border-gray-200 mt-3">
         {([
           ['scores', 'スコア'],
           ['groups', '組み合わせ'],
           ['penalties', '罰金'],
+          ...(event.is_finalized ? [['results', '結果']] : [])
         ] as [Tab, string][]).map(([key, label]) => (
           <button
             key={key}
@@ -354,6 +421,82 @@ export default function EventDetailPage() {
                   <li>パー3で1オン失敗（ストローク数2以上）: 100円</li>
                 </ul>
               </div>
+            )}
+          </div>
+        )}
+
+        {/* 結果タブ（イベント確定後のみ表示） */}
+        {tab === 'results' && event.is_finalized && (
+          <div className="space-y-2">
+            {results.length === 0 ? (
+              <p className="text-gray-500 text-sm">結果データがありません</p>
+            ) : (
+              <>
+                <div className="bg-white rounded-lg shadow overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-3 py-2 text-center">順位</th>
+                        <th className="px-3 py-2 text-left">名前</th>
+                        <th className="px-3 py-2 text-center">グロス</th>
+                        <th className="px-3 py-2 text-center">ネット</th>
+                        <th className="px-3 py-2 text-center">ポイント</th>
+                        <th className="px-3 py-2 text-center">ハンデ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {results.map((result) => {
+                        const handicapChanged = result.handicap_before !== result.handicap_after;
+                        return (
+                          <tr key={result.player_id} className="border-t border-gray-100">
+                            <td className="px-3 py-3 text-center">
+                              <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${
+                                result.rank === 1 ? 'bg-yellow-400 text-yellow-900' :
+                                result.rank === 2 ? 'bg-gray-300 text-gray-800' :
+                                result.rank === 3 ? 'bg-orange-300 text-orange-900' :
+                                'bg-gray-100 text-gray-600'
+                              }`}>
+                                {result.rank}
+                              </span>
+                            </td>
+                            <td className="px-3 py-3 font-medium">{result.players.name}</td>
+                            <td className="px-3 py-3 text-center">{result.gross_score}</td>
+                            <td className="px-3 py-3 text-center font-bold text-blue-600">
+                              {result.net_score}
+                            </td>
+                            <td className="px-3 py-3 text-center font-bold text-green-600">
+                              {result.points}pt
+                            </td>
+                            <td className="px-3 py-3 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <span className={handicapChanged ? 'line-through text-gray-400' : ''}>
+                                  {result.handicap_before.toFixed(1)}
+                                </span>
+                                {handicapChanged && (
+                                  <>
+                                    <span className="text-gray-400">→</span>
+                                    <span className="font-bold text-red-600">
+                                      {result.handicap_after.toFixed(1)}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* イベントタイプ表示 */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
+                  <p className="font-bold mb-1">イベント情報</p>
+                  <p>
+                    種別: {event.event_type === 'major' ? 'メジャー大会' : event.event_type === 'final' ? '最終戦' : '通常大会'}
+                  </p>
+                </div>
+              </>
             )}
           </div>
         )}
