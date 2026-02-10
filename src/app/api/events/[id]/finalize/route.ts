@@ -42,10 +42,11 @@ function calculateHandicapUpdate(
 // イベント確定API
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const eventId = params.id;
+    const { id } = await params;
+    const eventId = id;
     const { userId } = await req.json(); // 確定実行者のユーザーID
 
     // イベント情報取得
@@ -227,10 +228,11 @@ export async function POST(
 // イベント結果取得
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const eventId = params.id;
+    const { id } = await params;
+    const eventId = id;
 
     const { data: results, error } = await supabase
       .from('event_results')
