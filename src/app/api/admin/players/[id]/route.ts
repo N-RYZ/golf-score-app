@@ -4,10 +4,10 @@ import { supabase } from '@/lib/supabase';
 // プレイヤー詳細取得
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const { data: player, error: playerError } = await supabase
       .from('players')
@@ -44,10 +44,10 @@ export async function GET(
 // プレイヤー情報更新
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { name, gender, birth_year, initial_handicap, current_handicap, year } = await req.json();
 
     // プレイヤー基本情報を更新
@@ -100,10 +100,10 @@ export async function PUT(
 // プレイヤー削除
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // プレイヤーを削除（CASCADE設定により関連データも削除される）
     const { error } = await supabase
