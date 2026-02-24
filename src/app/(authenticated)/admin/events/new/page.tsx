@@ -134,8 +134,8 @@ export default function NewEventPage() {
   if (user?.role !== 'admin') return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-[#166534] text-white px-4 py-3 flex items-center gap-3">
+    <div className="min-h-screen bg-[#d6cabc]/30">
+      <header className="bg-[#1d3937] text-white px-4 py-3 flex items-center gap-3">
         <button onClick={() => router.push('/admin')} className="text-white">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
             <path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clipRule="evenodd" />
@@ -147,42 +147,42 @@ export default function NewEventPage() {
       <main className="p-4">
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded text-sm">
+            <div className="bg-[#91855a]/20 border border-[#91855a] text-[#1d3937] px-3 py-2 rounded text-sm">
               {error}
             </div>
           )}
 
           {/* 基本情報 */}
           <section className="bg-white rounded-lg shadow p-4 space-y-3">
-            <h2 className="font-bold text-gray-800">基本情報</h2>
+            <h2 className="font-bold text-[#1d3937]">基本情報</h2>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">イベント名</label>
+              <label className="block text-sm font-medium text-[#91855a] mb-1">イベント名</label>
               <input
                 type="text"
                 required
                 value={eventName}
                 onChange={(e) => setEventName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                className="w-full px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
                 placeholder="例: 第12回月例会"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">日付</label>
+              <label className="block text-sm font-medium text-[#91855a] mb-1">日付</label>
               <input
                 type="date"
                 required
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                className="w-full px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">コース</label>
+              <label className="block text-sm font-medium text-[#91855a] mb-1">コース</label>
               <select
                 required
                 value={courseId}
                 onChange={(e) => setCourseId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                className="w-full px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
               >
                 <option value="">選択してください</option>
                 {courses.map((c) => (
@@ -194,7 +194,7 @@ export default function NewEventPage() {
 
           {/* 参加者選択 */}
           <section className="bg-white rounded-lg shadow p-4 space-y-3">
-            <h2 className="font-bold text-gray-800">
+            <h2 className="font-bold text-[#1d3937]">
               参加者 ({selectedParticipants.length}人)
             </h2>
             <div className="grid grid-cols-2 gap-2">
@@ -205,8 +205,8 @@ export default function NewEventPage() {
                   onClick={() => toggleParticipant(m.id)}
                   className={`px-3 py-2 rounded-md text-sm font-medium border transition-colors ${
                     selectedParticipants.includes(m.id)
-                      ? 'bg-[#166534] text-white border-[#166534]'
-                      : 'bg-white text-gray-700 border-gray-300'
+                      ? 'bg-[#1d3937] text-white border-[#1d3937]'
+                      : 'bg-white text-[#91855a] border-[#d6cabc]'
                   }`}
                 >
                   {m.name}
@@ -218,24 +218,24 @@ export default function NewEventPage() {
           {/* 組み合わせ */}
           <section className="bg-white rounded-lg shadow p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-gray-800">組み合わせ</h2>
+              <h2 className="font-bold text-[#1d3937]">組み合わせ</h2>
               <button
                 type="button"
                 onClick={addGroup}
-                className="bg-[#166534] text-white px-3 py-1 rounded-md text-sm font-bold"
+                className="bg-[#1d3937] text-white px-3 py-1 rounded-md text-sm font-bold"
               >
                 + 組追加
               </button>
             </div>
 
             {groups.length === 0 && (
-              <p className="text-gray-500 text-sm">組を追加してメンバーを割り当ててください</p>
+              <p className="text-[#91855a] text-sm">組を追加してメンバーを割り当ててください</p>
             )}
 
             {groups.map((group, gi) => (
-              <div key={gi} className="border border-gray-200 rounded-lg p-3 space-y-2">
+              <div key={gi} className="border border-[#d6cabc] rounded-lg p-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-gray-800">
+                  <span className="font-bold text-sm text-[#1d3937]">
                     {group.group_number}組
                   </span>
                   <div className="flex items-center gap-2">
@@ -243,12 +243,12 @@ export default function NewEventPage() {
                       type="time"
                       value={group.start_time}
                       onChange={(e) => updateGroupTime(gi, e.target.value)}
-                      className="px-2 py-1 border border-gray-300 rounded text-sm"
+                      className="px-2 py-1 border border-[#d6cabc] rounded text-sm text-[#1d3937]"
                     />
                     <button
                       type="button"
                       onClick={() => removeGroup(gi)}
-                      className="text-red-500 text-sm"
+                      className="text-[#91855a] text-sm"
                     >
                       削除
                     </button>
@@ -261,7 +261,7 @@ export default function NewEventPage() {
                     <span
                       key={userId}
                       onClick={() => toggleGroupMember(gi, userId)}
-                      className="bg-[#166534] text-white px-2 py-1 rounded text-xs cursor-pointer"
+                      className="bg-[#1d3937] text-white px-2 py-1 rounded text-xs cursor-pointer"
                     >
                       {getMemberName(userId)} ×
                     </span>
@@ -276,7 +276,7 @@ export default function NewEventPage() {
                         key={userId}
                         type="button"
                         onClick={() => toggleGroupMember(gi, userId)}
-                        className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs border border-gray-300"
+                        className="bg-[#d6cabc] text-[#1d3937] px-2 py-1 rounded text-xs border border-[#91855a]"
                       >
                         + {getMemberName(userId)}
                       </button>
@@ -291,7 +291,7 @@ export default function NewEventPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-[#166534] text-white py-3 rounded-lg font-bold text-base disabled:opacity-50"
+            className="w-full bg-[#1d3937] text-white py-3 rounded-lg font-bold text-base disabled:opacity-50"
           >
             {submitting ? '作成中...' : 'イベントを作成'}
           </button>

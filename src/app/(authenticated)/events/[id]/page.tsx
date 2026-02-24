@@ -125,7 +125,6 @@ export default function EventDetailPage() {
   const liveRanking = useMemo(() => {
     if (!event || !event.courses) return [];
     const holes = event.courses.course_holes || [];
-    const totalHoles = holes.length;
     const participants = event.event_participants || [];
 
     const rankings = participants.map((p) => {
@@ -154,7 +153,7 @@ export default function EventDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">読み込み中...</p>
+        <p className="text-[#91855a]">読み込み中...</p>
       </div>
     );
   }
@@ -162,7 +161,7 @@ export default function EventDetailPage() {
   if (!event) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">イベントが見つかりません</p>
+        <p className="text-[#91855a]">イベントが見つかりません</p>
       </div>
     );
   }
@@ -180,6 +179,25 @@ export default function EventDetailPage() {
       return sum + (s?.strokes || 0);
     }, 0);
 
+  const playerPutts = (playerId: string, holeRange: CourseHole[]) =>
+    holeRange.reduce((sum, h) => {
+      const s = getScore(playerId, h.hole_number);
+      return sum + (s?.putts || 0);
+    }, 0);
+
+  const calcPenalty = (playerId: string) => {
+    let total = 0;
+    for (const hole of holes) {
+      const s = getScore(playerId, hole.hole_number);
+      if (!s || s.strokes === 0) continue;
+      // パット罰金: 3パット以上で (putts-2)×100円
+      if (s.putts >= 3) total += (s.putts - 2) * 100;
+      // PAR3ワンオン失敗: 到達打数(strokes-putts)≥2で100円
+      if (hole.par === 3 && (s.strokes - s.putts) >= 2) total += 100;
+    }
+    return total;
+  };
+
   const participants = event.event_participants || [];
 
   const formatDate = (dateStr: string) => {
@@ -188,8 +206,8 @@ export default function EventDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-[#166534] text-white px-4 py-3">
+    <div className="min-h-screen bg-[#d6cabc]/30">
+      <header className="bg-[#1d3937] text-white px-4 py-3">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push('/events')} className="text-white">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
@@ -198,7 +216,7 @@ export default function EventDetailPage() {
           </button>
           <div className="flex-1">
             <h1 className="text-lg font-bold">{event.name}</h1>
-            <p className="text-xs text-green-200">
+            <p className="text-xs text-[#d6cabc]">
               {formatDate(event.event_date)} - {event.courses?.name}
             </p>
           </div>
@@ -220,7 +238,7 @@ export default function EventDetailPage() {
         <div className="px-4 pt-3">
           <Link
             href={`/events/${eventId}/score/select-group`}
-            className="block w-full bg-[#166534] text-white text-center py-3 rounded-lg font-bold"
+            className="block w-full bg-[#1d3937] text-white text-center py-3 rounded-lg font-bold"
           >
             スコア入力
           </Link>
@@ -233,7 +251,7 @@ export default function EventDetailPage() {
           <button
             onClick={handleFinalize}
             disabled={finalizing}
-            className="block w-full bg-orange-600 text-white text-center py-3 rounded-lg font-bold hover:bg-orange-700 disabled:bg-gray-400"
+            className="block w-full bg-[#91855a] text-white text-center py-3 rounded-lg font-bold hover:bg-[#91855a]/80 disabled:opacity-50"
           >
             {finalizing ? '確定中...' : 'イベント確定（順位・ポイント・ハンデ計算）'}
           </button>
@@ -241,7 +259,7 @@ export default function EventDetailPage() {
       )}
 
       {/* タブ */}
-      <div className="flex border-b border-gray-200 mt-3">
+      <div className="flex border-b border-[#d6cabc] mt-3">
         {([
           ['scores', 'スコア'],
           ['groups', '組み合わせ'],
@@ -252,8 +270,8 @@ export default function EventDetailPage() {
             onClick={() => setTab(key)}
             className={`flex-1 py-2 text-sm font-medium text-center border-b-2 transition-colors ${
               tab === key
-                ? 'border-[#166534] text-[#166534]'
-                : 'border-transparent text-gray-500'
+                ? 'border-[#1d3937] text-[#1d3937]'
+                : 'border-transparent text-[#91855a]'
             }`}
           >
             {label}
@@ -266,52 +284,57 @@ export default function EventDetailPage() {
         {tab === 'scores' && (
           <div className="overflow-x-auto">
             {participants.length === 0 ? (
-              <p className="text-gray-500 text-sm">参加者がいません</p>
+              <p className="text-[#91855a] text-sm">参加者がいません</p>
             ) : (
               <table className="w-full text-xs border-collapse">
                 <thead>
-                  <tr className="bg-gray-100">
-                    <th className="sticky left-0 bg-gray-100 px-2 py-1 text-left">名前</th>
+                  <tr className="bg-[#d6cabc]">
+                    <th className="sticky left-0 bg-[#d6cabc] px-2 py-1 text-left text-[#1d3937]">名前</th>
                     {outHoles.map((h) => (
-                      <th key={h.hole_number} className="px-1 py-1 text-center min-w-[28px]">
+                      <th key={h.hole_number} className="px-1 py-1 text-center min-w-[28px] text-[#1d3937]">
                         {h.hole_number}
                       </th>
                     ))}
-                    <th className="px-1 py-1 text-center font-bold bg-gray-200">OUT</th>
+                    <th className="px-1 py-1 text-center font-bold bg-[#195042] text-white">OUT</th>
                     {inHoles.map((h) => (
-                      <th key={h.hole_number} className="px-1 py-1 text-center min-w-[28px]">
+                      <th key={h.hole_number} className="px-1 py-1 text-center min-w-[28px] text-[#1d3937]">
                         {h.hole_number}
                       </th>
                     ))}
-                    <th className="px-1 py-1 text-center font-bold bg-gray-200">IN</th>
-                    <th className="px-1 py-1 text-center font-bold bg-gray-300">計</th>
+                    <th className="px-1 py-1 text-center font-bold bg-[#195042] text-white">IN</th>
+                    <th className="px-1 py-1 text-center font-bold bg-[#1d3937] text-white">計</th>
+                    <th className="px-1 py-1 text-center font-bold bg-[#91855a] text-white">P-Point</th>
                   </tr>
-                  <tr className="bg-gray-50 text-gray-400">
-                    <td className="sticky left-0 bg-gray-50 px-2 py-1">PAR</td>
+                  <tr className="bg-[#d6cabc]/50 text-[#91855a]">
+                    <td className="sticky left-0 bg-[#d6cabc]/50 px-2 py-1">PAR</td>
                     {outHoles.map((h) => (
                       <td key={h.hole_number} className="px-1 py-1 text-center">{h.par}</td>
                     ))}
-                    <td className="px-1 py-1 text-center bg-gray-100">
+                    <td className="px-1 py-1 text-center bg-[#d6cabc]">
                       {outHoles.reduce((s, h) => s + h.par, 0)}
                     </td>
                     {inHoles.map((h) => (
                       <td key={h.hole_number} className="px-1 py-1 text-center">{h.par}</td>
                     ))}
-                    <td className="px-1 py-1 text-center bg-gray-100">
+                    <td className="px-1 py-1 text-center bg-[#d6cabc]">
                       {inHoles.reduce((s, h) => s + h.par, 0)}
                     </td>
-                    <td className="px-1 py-1 text-center bg-gray-200">
+                    <td className="px-1 py-1 text-center bg-[#d6cabc] text-[#1d3937]">
                       {holes.reduce((s, h) => s + h.par, 0)}
                     </td>
+                    <td className="bg-[#91855a]/20" />
                   </tr>
                 </thead>
                 <tbody>
                   {participants.map((p) => {
                     const outScore = playerTotal(p.player_id, outHoles);
                     const inScore = playerTotal(p.player_id, inHoles);
+                    const outPutts = playerPutts(p.player_id, outHoles);
+                    const inPutts = playerPutts(p.player_id, inHoles);
+                    const penalty = calcPenalty(p.player_id);
                     return (
-                      <tr key={p.id} className="border-t border-gray-100">
-                        <td className="sticky left-0 bg-white px-2 py-1 font-medium whitespace-nowrap">
+                      <tr key={p.id} className="border-t border-[#d6cabc]">
+                        <td className="sticky left-0 bg-white px-2 py-1 font-medium whitespace-nowrap text-[#1d3937]">
                           {p.players.name}
                         </td>
                         {outHoles.map((h) => {
@@ -320,16 +343,16 @@ export default function EventDetailPage() {
                           return (
                             <td
                               key={h.hole_number}
-                              className={`px-1 py-1 text-center ${
-                                diff > 0 ? 'text-red-600' : diff < 0 ? 'text-blue-600' : ''
+                              className={`px-1 py-1 text-center whitespace-nowrap ${
+                                diff > 0 ? 'text-[#91855a]' : diff < 0 ? 'text-[#195042]' : 'text-[#1d3937]'
                               }`}
                             >
-                              {s ? s.strokes : '-'}
+                              {s ? `${s.strokes}/(${s.putts})` : '-'}
                             </td>
                           );
                         })}
-                        <td className="px-1 py-1 text-center font-bold bg-gray-50">
-                          {outScore || '-'}
+                        <td className="px-1 py-1 text-center font-bold bg-[#d6cabc]/50 whitespace-nowrap text-[#1d3937]">
+                          {outScore ? `${outScore}/(${outPutts})` : '-'}
                         </td>
                         {inHoles.map((h) => {
                           const s = getScore(p.player_id, h.hole_number);
@@ -337,19 +360,22 @@ export default function EventDetailPage() {
                           return (
                             <td
                               key={h.hole_number}
-                              className={`px-1 py-1 text-center ${
-                                diff > 0 ? 'text-red-600' : diff < 0 ? 'text-blue-600' : ''
+                              className={`px-1 py-1 text-center whitespace-nowrap ${
+                                diff > 0 ? 'text-[#91855a]' : diff < 0 ? 'text-[#195042]' : 'text-[#1d3937]'
                               }`}
                             >
-                              {s ? s.strokes : '-'}
+                              {s ? `${s.strokes}/(${s.putts})` : '-'}
                             </td>
                           );
                         })}
-                        <td className="px-1 py-1 text-center font-bold bg-gray-50">
-                          {inScore || '-'}
+                        <td className="px-1 py-1 text-center font-bold bg-[#d6cabc]/50 whitespace-nowrap text-[#1d3937]">
+                          {inScore ? `${inScore}/(${inPutts})` : '-'}
                         </td>
-                        <td className="px-1 py-1 text-center font-bold bg-gray-100">
-                          {outScore + inScore || '-'}
+                        <td className="px-1 py-1 text-center font-bold bg-[#d6cabc] whitespace-nowrap text-[#1d3937]">
+                          {(outScore + inScore) ? `${outScore + inScore}/(${outPutts + inPutts})` : '-'}
+                        </td>
+                        <td className="px-1 py-1 text-center font-bold bg-[#91855a]/20 text-[#91855a] whitespace-nowrap">
+                          {penalty > 0 ? `${penalty}` : '-'}
                         </td>
                       </tr>
                     );
@@ -364,19 +390,19 @@ export default function EventDetailPage() {
         {tab === 'groups' && (
           <div className="space-y-3">
             {event.event_groups.length === 0 ? (
-              <p className="text-gray-500 text-sm">組み合わせが設定されていません</p>
+              <p className="text-[#91855a] text-sm">組み合わせが設定されていません</p>
             ) : (
               event.event_groups.map((group) => (
                 <div key={group.id} className="bg-white rounded-lg shadow p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-gray-800">{group.group_number}組</span>
-                    <span className="text-sm text-gray-500">{group.start_time}</span>
+                    <span className="font-bold text-[#1d3937]">{group.group_number}組</span>
+                    <span className="text-sm text-[#91855a]">{group.start_time}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {group.group_members.map((gm) => (
                       <span
                         key={gm.id}
-                        className="bg-green-50 text-green-800 px-3 py-1 rounded-full text-sm"
+                        className="bg-[#d6cabc] text-[#1d3937] px-3 py-1 rounded-full text-sm"
                       >
                         {gm.players.name}
                       </span>
@@ -396,48 +422,48 @@ export default function EventDetailPage() {
               <>
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                   <table className="w-full text-sm">
-                    <thead className="bg-gray-100">
+                    <thead className="bg-[#d6cabc]">
                       <tr>
-                        <th className="px-3 py-2 text-center">順位</th>
-                        <th className="px-3 py-2 text-left">名前</th>
-                        <th className="px-3 py-2 text-center">グロス</th>
-                        <th className="px-3 py-2 text-center">ネット</th>
-                        <th className="px-3 py-2 text-center">Pt</th>
-                        <th className="px-3 py-2 text-center">HC</th>
+                        <th className="px-3 py-2 text-center text-[#1d3937]">順位</th>
+                        <th className="px-3 py-2 text-left text-[#1d3937]">名前</th>
+                        <th className="px-3 py-2 text-center text-[#1d3937]">グロス</th>
+                        <th className="px-3 py-2 text-center text-[#1d3937]">ネット</th>
+                        <th className="px-3 py-2 text-center text-[#1d3937]">Pt</th>
+                        <th className="px-3 py-2 text-center text-[#1d3937]">HC</th>
                       </tr>
                     </thead>
                     <tbody>
                       {results.map((result) => {
                         const handicapChanged = result.handicap_before !== result.handicap_after;
                         return (
-                          <tr key={result.player_id} className="border-t border-gray-100">
+                          <tr key={result.player_id} className="border-t border-[#d6cabc]">
                             <td className="px-3 py-3 text-center">
                               <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${
-                                result.rank === 1 ? 'bg-yellow-400 text-yellow-900' :
-                                result.rank === 2 ? 'bg-gray-300 text-gray-800' :
-                                result.rank === 3 ? 'bg-orange-300 text-orange-900' :
-                                'bg-gray-100 text-gray-600'
+                                result.rank === 1 ? 'bg-[#91855a] text-white' :
+                                result.rank === 2 ? 'bg-[#d6cabc] text-[#1d3937]' :
+                                result.rank === 3 ? 'bg-[#195042] text-white' :
+                                'bg-white text-[#91855a] border border-[#d6cabc]'
                               }`}>
                                 {result.rank}
                               </span>
                             </td>
-                            <td className="px-3 py-3 font-medium">{result.players.name}</td>
-                            <td className="px-3 py-3 text-center">{result.gross_score}</td>
-                            <td className="px-3 py-3 text-center font-bold text-blue-600">
+                            <td className="px-3 py-3 font-medium text-[#1d3937]">{result.players.name}</td>
+                            <td className="px-3 py-3 text-center text-[#1d3937]">{result.gross_score}</td>
+                            <td className="px-3 py-3 text-center font-bold text-[#195042]">
                               {result.net_score}
                             </td>
-                            <td className="px-3 py-3 text-center font-bold text-green-600">
+                            <td className="px-3 py-3 text-center font-bold text-[#195042]">
                               {result.points}pt
                             </td>
                             <td className="px-3 py-3 text-center">
                               <div className="flex items-center justify-center gap-1">
-                                <span className={handicapChanged ? 'line-through text-gray-400' : ''}>
+                                <span className={handicapChanged ? 'line-through text-[#91855a]' : 'text-[#1d3937]'}>
                                   {result.handicap_before.toFixed(1)}
                                 </span>
                                 {handicapChanged && (
                                   <>
-                                    <span className="text-gray-400">→</span>
-                                    <span className="font-bold text-red-600">
+                                    <span className="text-[#91855a]">→</span>
+                                    <span className="font-bold text-[#91855a]">
                                       {result.handicap_after.toFixed(1)}
                                     </span>
                                   </>
@@ -451,7 +477,7 @@ export default function EventDetailPage() {
                   </table>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
+                <div className="bg-[#d6cabc] border border-[#91855a] rounded-lg p-3 text-xs text-[#1d3937]">
                   <p className="font-bold mb-1">イベント情報</p>
                   <p>
                     種別: {event.event_type === 'major' ? 'メジャー大会' : event.event_type === 'final' ? '最終戦' : '通常大会'}
@@ -462,30 +488,30 @@ export default function EventDetailPage() {
               /* 未確定: ライブランキング（グロス順） */
               <>
                 {liveRanking.length === 0 ? (
-                  <p className="text-gray-500 text-sm">スコアデータがありません</p>
+                  <p className="text-[#91855a] text-sm">スコアデータがありません</p>
                 ) : (
                   <div className="bg-white rounded-lg shadow overflow-hidden">
-                    <div className="bg-gray-50 px-3 py-2 text-xs text-gray-500 font-medium">
+                    <div className="bg-[#d6cabc]/50 px-3 py-2 text-xs text-[#91855a] font-medium">
                       グロススコア順（暫定）
                     </div>
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-100">
+                      <thead className="bg-[#d6cabc]">
                         <tr>
-                          <th className="px-3 py-2 text-center">#</th>
-                          <th className="px-3 py-2 text-left">名前</th>
-                          <th className="px-3 py-2 text-center">グロス</th>
-                          <th className="px-3 py-2 text-center">ホール数</th>
+                          <th className="px-3 py-2 text-center text-[#1d3937]">#</th>
+                          <th className="px-3 py-2 text-left text-[#1d3937]">名前</th>
+                          <th className="px-3 py-2 text-center text-[#1d3937]">グロス</th>
+                          <th className="px-3 py-2 text-center text-[#1d3937]">ホール数</th>
                         </tr>
                       </thead>
                       <tbody>
                         {liveRanking.map((r, idx) => (
-                          <tr key={r.player_id} className="border-t border-gray-100">
-                            <td className="px-3 py-3 text-center font-bold text-gray-500">
+                          <tr key={r.player_id} className="border-t border-[#d6cabc]">
+                            <td className="px-3 py-3 text-center font-bold text-[#91855a]">
                               {idx + 1}
                             </td>
-                            <td className="px-3 py-3 font-medium">{r.name}</td>
-                            <td className="px-3 py-3 text-center font-bold">{r.gross}</td>
-                            <td className="px-3 py-3 text-center text-gray-500">
+                            <td className="px-3 py-3 font-medium text-[#1d3937]">{r.name}</td>
+                            <td className="px-3 py-3 text-center font-bold text-[#1d3937]">{r.gross}</td>
+                            <td className="px-3 py-3 text-center text-[#91855a]">
                               {r.holesPlayed}H
                             </td>
                           </tr>

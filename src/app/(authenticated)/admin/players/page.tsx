@@ -135,18 +135,18 @@ export default function PlayersPage() {
   };
 
   if (loading) {
-    return <div className="p-6">読み込み中...</div>;
+    return <div className="p-6 text-[#91855a]">読み込み中...</div>;
   }
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold">プレイヤー管理</h1>
+          <h1 className="text-2xl font-bold text-[#1d3937]">プレイヤー管理</h1>
           <select
             value={year}
             onChange={(e) => setYear(parseInt(e.target.value))}
-            className="px-3 py-2 border border-gray-300 rounded-lg"
+            className="px-3 py-2 border border-[#d6cabc] rounded-lg text-[#1d3937]"
           >
             {[2026, 2027, 2028].map(y => (
               <option key={y} value={y}>{y}年度</option>
@@ -155,7 +155,7 @@ export default function PlayersPage() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          className="px-4 py-2 bg-[#1d3937] text-white rounded-lg hover:bg-[#195042]"
         >
           新規プレイヤー登録
         </button>
@@ -163,29 +163,29 @@ export default function PlayersPage() {
 
       {/* 登録・編集フォーム */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-[#1d3937]/50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold mb-4">
+            <h2 className="text-xl font-bold mb-4 text-[#1d3937]">
               {editingId ? 'プレイヤー編集' : '新規プレイヤー登録'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">名前*</label>
+                <label className="block text-sm font-medium mb-1 text-[#91855a]">名前*</label>
                 <input
                   type="text"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-[#d6cabc] rounded-lg text-[#1d3937]"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">性別</label>
+                <label className="block text-sm font-medium mb-1 text-[#91855a]">性別</label>
                 <select
                   value={formGender}
                   onChange={(e) => setFormGender(e.target.value as 'male' | 'female')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-[#d6cabc] rounded-lg text-[#1d3937]"
                 >
                   <option value="male">男性</option>
                   <option value="female">女性</option>
@@ -193,41 +193,41 @@ export default function PlayersPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">生年（西暦）</label>
+                <label className="block text-sm font-medium mb-1 text-[#91855a]">生年（西暦）</label>
                 <input
                   type="number"
                   value={formBirthYear}
                   onChange={(e) => setFormBirthYear(e.target.value)}
                   placeholder="1980"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-[#d6cabc] rounded-lg text-[#1d3937]"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">{year}年度 初期ハンデ*</label>
+                <label className="block text-sm font-medium mb-1 text-[#91855a]">{year}年度 初期ハンデ*</label>
                 <input
                   type="number"
                   step="0.1"
                   value={formInitialHandicap}
                   onChange={(e) => setFormInitialHandicap(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-[#d6cabc] rounded-lg text-[#1d3937]"
                   required
                 />
               </div>
 
-              {error && <p className="text-red-600 text-sm">{error}</p>}
+              {error && <p className="text-[#91855a] text-sm">{error}</p>}
 
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  className="flex-1 px-4 py-2 bg-[#1d3937] text-white rounded-lg hover:bg-[#195042]"
                 >
                   {editingId ? '更新' : '登録'}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                  className="flex-1 px-4 py-2 bg-[#d6cabc] text-[#1d3937] rounded-lg hover:bg-[#d6cabc]/70"
                 >
                   キャンセル
                 </button>
@@ -239,51 +239,51 @@ export default function PlayersPage() {
 
       {/* プレイヤー一覧 */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-[#d6cabc]">
+          <thead className="bg-[#d6cabc]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">名前</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">性別</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">生年</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">初期HC</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">現在HC</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">ポイント</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">参加数</th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">操作</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[#1d3937] uppercase">名前</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[#1d3937] uppercase">性別</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[#1d3937] uppercase">生年</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-[#1d3937] uppercase">初期HC</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-[#1d3937] uppercase">現在HC</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-[#1d3937] uppercase">ポイント</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-[#1d3937] uppercase">参加数</th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-[#1d3937] uppercase">操作</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-[#d6cabc]">
             {players.map((player) => (
               <tr key={player.id}>
-                <td className="px-6 py-4 whitespace-nowrap font-medium">{player.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                <td className="px-6 py-4 whitespace-nowrap font-medium text-[#1d3937]">{player.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#91855a]">
                   {player.gender === 'female' ? '女性' : '男性'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#91855a]">
                   {player.birth_year || '-'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right">
+                <td className="px-6 py-4 whitespace-nowrap text-right text-[#91855a]">
                   {player.initial_handicap?.toFixed(1) || '-'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right font-medium">
+                <td className="px-6 py-4 whitespace-nowrap text-right font-medium text-[#1d3937]">
                   {player.current_handicap?.toFixed(1) || '-'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right font-bold text-blue-600">
+                <td className="px-6 py-4 whitespace-nowrap text-right font-bold text-[#195042]">
                   {player.total_points}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right">
+                <td className="px-6 py-4 whitespace-nowrap text-right text-[#91855a]">
                   {player.participation_count}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <button
                     onClick={() => handleEdit(player)}
-                    className="text-blue-600 hover:text-blue-800 mr-3"
+                    className="text-[#195042] hover:text-[#1d3937] mr-3"
                   >
                     編集
                   </button>
                   <button
                     onClick={() => handleDelete(player.id, player.name)}
-                    className="text-red-600 hover:text-red-800"
+                    className="text-[#91855a] hover:text-[#1d3937]"
                   >
                     削除
                   </button>
@@ -295,7 +295,7 @@ export default function PlayersPage() {
       </div>
 
       {players.length === 0 && (
-        <p className="text-center text-gray-500 py-8">プレイヤーが登録されていません</p>
+        <p className="text-center text-[#91855a] py-8">プレイヤーが登録されていません</p>
       )}
     </div>
   );

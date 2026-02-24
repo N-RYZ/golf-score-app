@@ -20,9 +20,9 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  upcoming: 'bg-blue-100 text-blue-700',
-  in_progress: 'bg-green-100 text-green-700',
-  completed: 'bg-gray-100 text-gray-600',
+  upcoming: 'bg-[#d6cabc] text-[#1d3937]',
+  in_progress: 'bg-[#195042] text-white',
+  completed: 'bg-[#91855a] text-white',
 };
 
 export default function EventsPage() {
@@ -49,8 +49,8 @@ export default function EventsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-[#166534] text-white px-4 py-3">
+    <div className="min-h-screen bg-[#d6cabc]/30">
+      <header className="bg-[#1d3937] text-white px-4 py-3">
         <h1 className="text-lg font-bold">イベント一覧</h1>
       </header>
 
@@ -63,8 +63,8 @@ export default function EventsPage() {
               onClick={() => setFilter(key)}
               className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                 filter === key
-                  ? 'bg-[#166534] text-white'
-                  : 'bg-white text-gray-600 border border-gray-300'
+                  ? 'bg-[#1d3937] text-white'
+                  : 'bg-white text-[#91855a] border border-[#d6cabc]'
               }`}
             >
               {label}
@@ -74,9 +74,9 @@ export default function EventsPage() {
 
         {/* イベント一覧 */}
         {loading ? (
-          <p className="text-gray-500 text-sm">読み込み中...</p>
+          <p className="text-[#91855a] text-sm">読み込み中...</p>
         ) : events.length === 0 ? (
-          <p className="text-gray-500 text-sm">イベントがありません</p>
+          <p className="text-[#91855a] text-sm">イベントがありません</p>
         ) : (
           <div className="space-y-3">
             {events.map((event) => (
@@ -87,14 +87,14 @@ export default function EventsPage() {
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="font-bold text-gray-800">{event.name}</p>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="font-bold text-[#1d3937]">{event.name}</p>
+                    <p className="text-sm text-[#91855a] mt-1">
                       {formatDate(event.event_date)}
                     </p>
                     {event.courses && (
-                      <p className="text-sm text-gray-500">{event.courses.name}</p>
+                      <p className="text-sm text-[#91855a]">{event.courses.name}</p>
                     )}
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-[#91855a] mt-1">
                       参加者: {event.event_participants?.length || 0}人
                     </p>
                   </div>

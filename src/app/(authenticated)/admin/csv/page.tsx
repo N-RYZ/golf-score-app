@@ -97,8 +97,8 @@ export default function CsvPage() {
   if (user?.role !== 'admin') return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-[#166534] text-white px-4 py-3 flex items-center gap-3">
+    <div className="min-h-screen bg-[#d6cabc]/30">
+      <header className="bg-[#1d3937] text-white px-4 py-3 flex items-center gap-3">
         <button onClick={() => router.push('/admin')} className="text-white">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
             <path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clipRule="evenodd" />
@@ -110,26 +110,26 @@ export default function CsvPage() {
       <main className="p-4 space-y-6">
         {/* 期間一括出力 */}
         <section className="bg-white rounded-lg shadow p-4 space-y-3">
-          <h2 className="font-bold text-gray-800">期間一括出力</h2>
+          <h2 className="font-bold text-[#1d3937]">期間一括出力</h2>
           <div className="flex gap-2 items-center">
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+              className="flex-1 px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
             />
-            <span className="text-gray-500">〜</span>
+            <span className="text-[#91855a]">〜</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+              className="flex-1 px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
             />
           </div>
           <button
             onClick={downloadBulkCsv}
             disabled={downloading === 'bulk'}
-            className="w-full bg-[#166534] text-white py-2 rounded-md text-sm font-bold disabled:opacity-50"
+            className="w-full bg-[#1d3937] text-white py-2 rounded-md text-sm font-bold disabled:opacity-50"
           >
             {downloading === 'bulk' ? 'ダウンロード中...' : '一括ダウンロード'}
           </button>
@@ -137,11 +137,11 @@ export default function CsvPage() {
 
         {/* イベント単位出力 */}
         <section>
-          <h2 className="font-bold text-gray-800 mb-3">イベント単位出力</h2>
+          <h2 className="font-bold text-[#1d3937] mb-3">イベント単位出力</h2>
           {loading ? (
-            <p className="text-gray-500 text-sm">読み込み中...</p>
+            <p className="text-[#91855a] text-sm">読み込み中...</p>
           ) : events.length === 0 ? (
-            <p className="text-gray-500 text-sm">イベントがありません</p>
+            <p className="text-[#91855a] text-sm">イベントがありません</p>
           ) : (
             <div className="space-y-2">
               {events.map((event) => (
@@ -150,13 +150,13 @@ export default function CsvPage() {
                   className="bg-white rounded-lg shadow p-4 flex items-center justify-between"
                 >
                   <div>
-                    <p className="font-medium text-gray-800">{event.name}</p>
-                    <p className="text-xs text-gray-500">{formatDate(event.event_date)}</p>
+                    <p className="font-medium text-[#1d3937]">{event.name}</p>
+                    <p className="text-xs text-[#91855a]">{formatDate(event.event_date)}</p>
                   </div>
                   <button
                     onClick={() => downloadEventCsv(event.id)}
                     disabled={downloading === event.id}
-                    className="bg-[#166534] text-white px-3 py-1 rounded-md text-sm font-bold disabled:opacity-50"
+                    className="bg-[#1d3937] text-white px-3 py-1 rounded-md text-sm font-bold disabled:opacity-50"
                   >
                     {downloading === event.id ? '...' : 'CSV'}
                   </button>

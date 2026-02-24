@@ -29,7 +29,7 @@ export default function AuthenticatedLayout({
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">読み込み中...</p>
+        <p className="text-[#91855a]">読み込み中...</p>
       </div>
     );
   }

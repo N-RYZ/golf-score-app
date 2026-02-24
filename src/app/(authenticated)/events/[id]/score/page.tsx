@@ -13,6 +13,7 @@ type ScoreData = {
   hole_number: number;
   strokes: number;
   putts: number;
+  isDefault?: boolean;
 };
 type EventInfo = {
   id: string;
@@ -165,6 +166,7 @@ export default function ScoreInputPage() {
           hole_number: currentHole,
           strokes: holePar,
           putts: 2,
+          isDefault: true,
         };
         hasUpdate = true;
       }
@@ -284,10 +286,10 @@ export default function ScoreInputPage() {
 
   const handleHoleChange = useCallback(
     (newHole: number) => {
-      // 現在のユーザーのスコアを保存
-      if (selectedUserId) {
-        saveScore(selectedUserId, currentHole);
-      }
+      // 現在のホールの全メンバーのスコアを保存
+      getGroupMembers().forEach((member) => {
+        saveScore(member.player_id, currentHole);
+      });
 
       // 9H終了後（10Hに進む前）にアテスト画面を表示
       if (currentHole === 9 && newHole === 10) {
@@ -309,7 +311,7 @@ export default function ScoreInputPage() {
       prevHoleRef.current = newHole;
       setCurrentHole(newHole);
     },
-    [saveScore, selectedUserId, currentHole]
+    [saveScore, currentHole, getGroupMembers]
   );
 
   // アテスト確認OK
@@ -365,7 +367,7 @@ export default function ScoreInputPage() {
     if (field === 'strokes' && newVal < 1) newVal = 1;
     if (field === 'putts' && newVal < 0) newVal = 0;
 
-    const updated = { ...current, [field]: newVal };
+    const updated = { ...current, [field]: newVal, isDefault: false };
     const newScores = { ...scores, [key]: updated };
     setScores(newScores);
     localStorage.setItem(STORAGE_KEY(eventId), JSON.stringify(newScores));
@@ -531,7 +533,7 @@ export default function ScoreInputPage() {
           <div className="p-4 border-t border-gray-200 flex gap-2 sticky bottom-0 bg-white">
             <button
               onClick={handleAttestConfirm}
-              className="flex-1 py-3 px-4 bg-[#166534] text-white font-bold rounded hover:bg-[#14532d] active:bg-[#14532d]"
+              className="flex-1 py-3 px-4 bg-[#22393c] text-white font-bold rounded hover:bg-[#1a2c2e] active:bg-[#1a2c2e]"
             >
               {isFront ? '確認OK（後半へ）' : '確認OK（完了）'}
             </button>
@@ -542,48 +544,59 @@ export default function ScoreInputPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-gray-50 select-none">
+    <div className="min-h-[100dvh] flex flex-col bg-[#cecdb9] select-none">
       {/* 1. メンバー選択（2行×2列） */}
-      <div className="grid grid-cols-2 gap-[1px] bg-gray-200">
-        {groupMembers.slice(0, 4).map((p) => (
-          <button
-            key={p.player_id}
-            onClick={() => handleMemberSwitch(p.player_id)}
-            className={`py-5 font-bold transition-colors ${
-              selectedUserId === p.player_id
-                ? 'bg-[#166534] text-white'
-                : 'bg-gray-100 text-gray-500'
-            }`}
-            style={{ fontSize: 'min(28px, 6.5vw)' }}
-          >
-            {p.players.name}
-          </button>
-        ))}
+      <div className="flex-[2] grid grid-cols-2 gap-[1px] bg-[#22393c]">
+        {groupMembers.slice(0, 4).map((p) => {
+          const memberScore = scores[scoreKey(p.player_id, currentHole)];
+          return (
+            <button
+              key={p.player_id}
+              onClick={() => handleMemberSwitch(p.player_id)}
+              className={`py-5 font-bold transition-colors relative overflow-hidden ${
+                selectedUserId === p.player_id
+                  ? 'bg-[#22393c] text-white'
+                  : 'bg-[#cecdb9] text-[#22393c]'
+              }`}
+              style={{ fontSize: 'min(28px, 6.5vw)' }}
+            >
+              {memberScore && !memberScore.isDefault && (
+                <span
+                  className="absolute bottom-1 right-2 font-black leading-none pointer-events-none"
+                  style={{ fontSize: 'min(42px, 10vw)', opacity: 0.4, color: 'currentColor' }}
+                >
+                  {memberScore.strokes}({memberScore.putts})
+                </span>
+              )}
+              <span className="relative z-10">{p.players.name}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* 2. 打数エリア */}
-      <div className="flex-1 flex" style={{ backgroundColor: '#F5E6B3' }}>
+      <div className="flex-[2] flex" style={{ backgroundColor: '#cecdb9' }}>
         <button
           onClick={() => updateScore('strokes', -1)}
-          className="flex-1 flex items-center justify-center border-r-2 active:opacity-80"
-          style={{ backgroundColor: '#FAF3D7', borderRightColor: '#E8D49A' }}
+          className="flex-1 flex items-center justify-center border-r-2 active:opacity-70"
+          style={{ backgroundColor: '#deded4', borderRightColor: '#afbb98' }}
         >
-          <span className="text-[min(80px,20vw)] leading-none font-light" style={{ color: '#8B7000' }}>
+          <span className="text-[min(80px,20vw)] leading-none font-light" style={{ color: '#46707e' }}>
             −
           </span>
         </button>
 
-        <div className="flex-1 flex flex-col items-center justify-center" style={{ backgroundColor: '#F5E6B3' }}>
-          <span className="text-lg font-bold mb-2" style={{ color: '#3A2800' }}>打数</span>
+        <div className="flex-1 flex flex-col items-center justify-center" style={{ backgroundColor: '#cecdb9' }}>
+          <span className="text-4xl font-bold mb-2" style={{ color: '#22393c' }}>打数</span>
           <span
             className="font-bold"
-            style={{ fontSize: 'min(100px, 25vw)', color: '#1A0800' }}
+            style={{ fontSize: 'min(100px, 25vw)', color: '#22393c' }}
           >
             {currentScore.strokes}
           </span>
           <span
             className={`text-sm font-bold mt-1 min-h-[20px] ${
-              diff > 0 ? 'text-red-600' : diff < 0 ? 'text-blue-600' : 'text-green-700'
+              diff > 0 ? 'text-red-500' : diff < 0 ? 'text-blue-500' : 'text-[#6b8b81]'
             }`}
           >
             {currentScore.strokes > 0 && diff !== 0 ? `${diff > 0 ? '+' : ''}${diff}` : ''}
@@ -592,8 +605,8 @@ export default function ScoreInputPage() {
 
         <button
           onClick={() => updateScore('strokes', 1)}
-          className="flex-1 flex items-center justify-center border-l-2 active:opacity-90"
-          style={{ backgroundColor: '#D0A900', borderLeftColor: '#B89300' }}
+          className="flex-1 flex items-center justify-center border-l-2 active:opacity-80"
+          style={{ backgroundColor: '#46707e', borderLeftColor: '#22393c' }}
         >
           <span className="text-[min(80px,20vw)] leading-none text-white font-bold">
             +
@@ -602,21 +615,22 @@ export default function ScoreInputPage() {
       </div>
 
       {/* 3. パットエリア */}
-      <div className="flex-1 flex bg-green-50">
+      <div className="flex-[2] flex" style={{ backgroundColor: '#afbb98' }}>
         <button
           onClick={() => updateScore('putts', -1)}
-          className="flex-1 flex items-center justify-center bg-white border-r-2 border-gray-200 active:bg-gray-100"
+          className="flex-1 flex items-center justify-center border-r-2 active:opacity-70"
+          style={{ backgroundColor: '#cecdb9', borderRightColor: '#afbb98' }}
         >
-          <span className="text-[min(80px,20vw)] leading-none text-gray-500 font-light">
+          <span className="text-[min(80px,20vw)] leading-none font-light" style={{ color: '#46707e' }}>
             −
           </span>
         </button>
 
-        <div className="flex-1 flex flex-col items-center justify-center bg-green-50">
-          <span className="text-lg font-bold text-gray-600 mb-2">パット</span>
+        <div className="flex-1 flex flex-col items-center justify-center" style={{ backgroundColor: '#afbb98' }}>
+          <span className="text-4xl font-bold mb-2" style={{ color: '#22393c' }}>パット</span>
           <span
-            className="font-bold text-gray-900"
-            style={{ fontSize: 'min(100px, 25vw)' }}
+            className="font-bold"
+            style={{ fontSize: 'min(100px, 25vw)', color: '#22393c' }}
           >
             {currentScore.putts}
           </span>
@@ -624,7 +638,8 @@ export default function ScoreInputPage() {
 
         <button
           onClick={() => updateScore('putts', 1)}
-          className="flex-1 flex items-center justify-center bg-[#166534] border-l-2 border-[#14532d] active:bg-[#14532d]"
+          className="flex-1 flex items-center justify-center border-l-2 active:opacity-80"
+          style={{ backgroundColor: '#6b8b81', borderLeftColor: '#22393c' }}
         >
           <span className="text-[min(80px,20vw)] leading-none text-white font-bold">
             +
@@ -633,31 +648,33 @@ export default function ScoreInputPage() {
       </div>
 
       {/* 4. ホール番号ナビ */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200">
+      <div className="flex-1 flex">
         <button
           onClick={() => handleHoleChange(currentHole - 1)}
           disabled={currentHole <= 1}
-          className="w-[48px] h-[48px] rounded bg-[#166534] flex items-center justify-center disabled:opacity-30 active:bg-[#14532d]"
+          className="flex-1 flex items-center justify-center disabled:opacity-25 active:opacity-60"
+          style={{ backgroundColor: '#46707e' }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-[70px] h-[70px] text-white">
             <path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clipRule="evenodd" />
           </svg>
         </button>
 
-        <div className="text-center">
-          <span className="font-bold text-gray-900" style={{ fontSize: 'min(56px, 14vw)' }}>
-            {currentHole}<span className="text-[0.4em]">H</span>
+        <div className="flex-1 flex flex-col items-center justify-center" style={{ backgroundColor: '#22393c' }}>
+          <span className="font-bold text-white" style={{ fontSize: 'min(56px, 14vw)' }}>
+            {currentHole}H
           </span>
-          <span className="text-sm text-gray-500 block -mt-1">
+          <span className="font-bold block -mt-1" style={{ fontSize: 'min(30px, 7vw)', color: '#afbb98' }}>
             PAR {currentPar}
           </span>
         </div>
 
         <button
           onClick={() => handleHoleChange(currentHole + 1)}
-          className="w-[48px] h-[48px] rounded bg-[#166534] flex items-center justify-center active:bg-[#14532d]"
+          className="flex-1 flex items-center justify-center active:opacity-60"
+          style={{ backgroundColor: '#46707e' }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-[70px] h-[70px] text-white">
             <path fillRule="evenodd" d="M16.28 11.47a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 01-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 011.06-1.06l7.5 7.5z" clipRule="evenodd" />
           </svg>
         </button>

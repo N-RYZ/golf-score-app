@@ -66,26 +66,26 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-[#d6cabc]/30">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
         <div>
-          <h1 className="text-center text-3xl font-bold text-gray-900">
+          <h1 className="text-center text-3xl font-bold text-[#1d3937]">
             ゴルフスコア管理
           </h1>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-[#91855a]">
             月例会スコア管理システム
           </p>
         </div>
 
         <div className="mt-8 space-y-6">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded text-center">
+            <div className="bg-[#91855a]/20 border border-[#91855a] text-[#1d3937] px-4 py-3 rounded text-center">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 text-center mb-4">
+            <label className="block text-sm font-medium text-[#91855a] text-center mb-4">
               PINコードを入力
             </label>
             <div className="flex justify-center gap-3">
@@ -100,7 +100,7 @@ export default function LoginPage() {
                   onChange={(e) => handleDigitChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   disabled={isLoading}
-                  className="w-14 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:opacity-50"
+                  className="w-14 h-14 text-center text-2xl font-bold border-2 border-[#d6cabc] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#195042] focus:border-[#195042] disabled:opacity-50 text-[#1d3937]"
                   autoFocus={index === 0}
                 />
               ))}
@@ -108,7 +108,7 @@ export default function LoginPage() {
           </div>
 
           {isLoading && (
-            <p className="text-center text-sm text-gray-500">認証中...</p>
+            <p className="text-center text-sm text-[#91855a]">認証中...</p>
           )}
         </div>
       </div>

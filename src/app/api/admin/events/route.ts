@@ -62,9 +62,10 @@ export async function POST(req: NextRequest) {
         }
 
         if (group.members && group.members.length > 0) {
-          const memberRecords = group.members.map((userId: string) => ({
+          const memberRecords = group.members.map((userId: string, index: number) => ({
             group_id: groupData.id,
             player_id: userId,
+            order_index: index,
           }));
 
           const { error: memberError } = await supabase

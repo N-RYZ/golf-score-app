@@ -40,11 +40,17 @@ export async function GET(req: NextRequest) {
       const stats = seasonStats?.find(s => s.player_id === player.id);
       return {
         ...player,
-        initial_handicap: stats?.initial_handicap || null,
-        current_handicap: stats?.current_handicap || null,
+        initial_handicap: stats?.initial_handicap ?? null,
+        current_handicap: stats?.current_handicap ?? null,
         total_points: stats?.total_points || 0,
         participation_count: stats?.participation_count || 0
       };
+    });
+
+    playersWithStats.sort((a, b) => {
+      const ha = a.current_handicap ?? 999;
+      const hb = b.current_handicap ?? 999;
+      return ha - hb;
     });
 
     return NextResponse.json(playersWithStats);

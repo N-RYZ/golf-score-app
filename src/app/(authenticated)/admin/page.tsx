@@ -63,8 +63,8 @@ export default function AdminPage() {
   if (!user || user.role !== 'admin') return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-[#166534] text-white px-4 py-4">
+    <div className="min-h-screen bg-[#d6cabc]/30">
+      <div className="bg-[#1d3937] text-white px-4 py-4">
         <h1 className="text-lg font-bold">管理メニュー</h1>
       </div>
 
@@ -73,16 +73,16 @@ export default function AdminPage() {
           <Link
             key={item.href}
             href={item.href}
-            className="flex items-center gap-4 bg-white rounded-lg shadow-sm p-4 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-4 bg-white rounded-lg shadow-sm p-4 hover:bg-[#d6cabc]/20 transition-colors"
           >
-            <div className="text-[#166534]">
+            <div className="text-[#1d3937]">
               {item.icon}
             </div>
             <div>
-              <p className="font-medium text-gray-900">{item.label}</p>
-              <p className="text-sm text-gray-500">{item.description}</p>
+              <p className="font-medium text-[#1d3937]">{item.label}</p>
+              <p className="text-sm text-[#91855a]">{item.description}</p>
             </div>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 ml-auto text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 ml-auto text-[#91855a]">
               <path fillRule="evenodd" d="M16.28 11.47a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 01-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 011.06-1.06l7.5 7.5z" clipRule="evenodd" />
             </svg>
           </Link>

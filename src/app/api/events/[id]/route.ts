@@ -48,6 +48,14 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     event.event_groups.sort(
       (a: { group_number: number }, b: { group_number: number }) => a.group_number - b.group_number
     );
+    // group_members を order_index 順にソート
+    for (const group of event.event_groups) {
+      if (group.group_members) {
+        group.group_members.sort(
+          (a: { order_index: number }, b: { order_index: number }) => a.order_index - b.order_index
+        );
+      }
+    }
   }
 
   return NextResponse.json({ ...event, scores: scores || [] });
@@ -127,9 +135,10 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         }
 
         if (group.members && group.members.length > 0) {
-          const memberRecords = group.members.map((playerId: string) => ({
+          const memberRecords = group.members.map((playerId: string, index: number) => ({
             group_id: groupData.id,
             player_id: playerId,
+            order_index: index,
           }));
           const { error: memberError } = await supabase
             .from('group_members')

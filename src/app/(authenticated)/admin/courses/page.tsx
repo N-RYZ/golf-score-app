@@ -113,8 +113,8 @@ export default function CoursesPage() {
   if (user?.role !== 'admin') return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-[#166534] text-white px-4 py-3 flex items-center justify-between">
+    <div className="min-h-screen bg-[#d6cabc]/30">
+      <header className="bg-[#1d3937] text-white px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push('/admin')} className="text-white">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
@@ -125,7 +125,7 @@ export default function CoursesPage() {
         </div>
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="bg-white text-[#166534] px-3 py-1 rounded-md text-sm font-bold"
+          className="bg-white text-[#1d3937] px-3 py-1 rounded-md text-sm font-bold"
         >
           + 追加
         </button>
@@ -135,24 +135,24 @@ export default function CoursesPage() {
         {/* 登録フォーム */}
         {showForm && (
           <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-4 mb-4 space-y-4">
-            <h2 className="font-bold text-gray-800">
+            <h2 className="font-bold text-[#1d3937]">
               {editingId ? 'コース編集' : '新規コース登録'}
             </h2>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded text-sm">
+              <div className="bg-[#91855a]/20 border border-[#91855a] text-[#1d3937] px-3 py-2 rounded text-sm">
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">コース名</label>
+              <label className="block text-sm font-medium text-[#91855a] mb-1">コース名</label>
               <input
                 type="text"
                 required
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                className="w-full px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
                 placeholder="例: ○○カントリークラブ"
               />
             </div>
@@ -160,17 +160,17 @@ export default function CoursesPage() {
             {/* OUT (1-9) */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-bold text-gray-700">OUT (1-9H)</span>
-                <span className="text-xs text-gray-500">合計: {outTotal(formHoles)}</span>
+                <span className="text-sm font-bold text-[#1d3937]">OUT (1-9H)</span>
+                <span className="text-xs text-[#91855a]">合計: {outTotal(formHoles)}</span>
               </div>
               <div className="grid grid-cols-9 gap-1">
                 {formHoles.slice(0, 9).map((par, i) => (
                   <div key={i} className="text-center">
-                    <div className="text-xs text-gray-500 mb-1">{i + 1}H</div>
+                    <div className="text-xs text-[#91855a] mb-1">{i + 1}H</div>
                     <select
                       value={par}
                       onChange={(e) => setHolePar(i, Number(e.target.value))}
-                      className="w-full text-center border border-gray-300 rounded py-1 text-sm"
+                      className="w-full text-center border border-[#d6cabc] rounded py-1 text-sm text-[#1d3937]"
                     >
                       <option value={3}>3</option>
                       <option value={4}>4</option>
@@ -184,17 +184,17 @@ export default function CoursesPage() {
             {/* IN (10-18) */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-bold text-gray-700">IN (10-18H)</span>
-                <span className="text-xs text-gray-500">合計: {inTotal(formHoles)}</span>
+                <span className="text-sm font-bold text-[#1d3937]">IN (10-18H)</span>
+                <span className="text-xs text-[#91855a]">合計: {inTotal(formHoles)}</span>
               </div>
               <div className="grid grid-cols-9 gap-1">
                 {formHoles.slice(9, 18).map((par, i) => (
                   <div key={i + 9} className="text-center">
-                    <div className="text-xs text-gray-500 mb-1">{i + 10}H</div>
+                    <div className="text-xs text-[#91855a] mb-1">{i + 10}H</div>
                     <select
                       value={par}
                       onChange={(e) => setHolePar(i + 9, Number(e.target.value))}
-                      className="w-full text-center border border-gray-300 rounded py-1 text-sm"
+                      className="w-full text-center border border-[#d6cabc] rounded py-1 text-sm text-[#1d3937]"
                     >
                       <option value={3}>3</option>
                       <option value={4}>4</option>
@@ -205,21 +205,21 @@ export default function CoursesPage() {
               </div>
             </div>
 
-            <div className="text-right text-sm text-gray-600">
+            <div className="text-right text-sm text-[#91855a]">
               合計パー: {outTotal(formHoles) + inTotal(formHoles)}
             </div>
 
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="flex-1 bg-[#166534] text-white py-2 rounded-md text-sm font-bold"
+                className="flex-1 bg-[#1d3937] text-white py-2 rounded-md text-sm font-bold"
               >
                 {editingId ? '更新' : '登録'}
               </button>
               <button
                 type="button"
                 onClick={resetForm}
-                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-md text-sm"
+                className="flex-1 bg-[#d6cabc] text-[#1d3937] py-2 rounded-md text-sm"
               >
                 キャンセル
               </button>
@@ -229,32 +229,32 @@ export default function CoursesPage() {
 
         {/* コース一覧 */}
         {loading ? (
-          <p className="text-gray-500 text-sm">読み込み中...</p>
+          <p className="text-[#91855a] text-sm">読み込み中...</p>
         ) : courses.length === 0 ? (
-          <p className="text-gray-500 text-sm">コースが登録されていません</p>
+          <p className="text-[#91855a] text-sm">コースが登録されていません</p>
         ) : (
           <div className="space-y-3">
             {courses.map((course) => (
               <div key={course.id} className="bg-white rounded-lg shadow p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="font-bold text-gray-800">{course.name}</p>
+                  <p className="font-bold text-[#1d3937]">{course.name}</p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEdit(course)}
-                      className="text-blue-600 text-sm px-2 py-1"
+                      className="text-[#195042] text-sm px-2 py-1"
                     >
                       編集
                     </button>
                     <button
                       onClick={() => handleDelete(course)}
-                      className="text-red-600 text-sm px-2 py-1"
+                      className="text-[#91855a] text-sm px-2 py-1"
                     >
                       削除
                     </button>
                   </div>
                 </div>
                 {course.course_holes.length > 0 && (
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-[#91855a]">
                     <div className="flex gap-1 flex-wrap">
                       <span className="font-bold">OUT:</span>
                       {course.course_holes.slice(0, 9).map((h) => (
