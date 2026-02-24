@@ -55,8 +55,8 @@ export default function SelectGroupPage() {
   const groups = event.event_groups?.sort((a, b) => a.group_number - b.group_number) || [];
 
   return (
-    <div className="min-h-screen bg-[#d6cabc]/30">
-      <div className="bg-[#1d3937] text-white px-4 py-4 flex items-center gap-3">
+    <div className="h-screen flex flex-col bg-[#d6cabc]/30">
+      <div className="bg-[#1d3937] text-white px-4 py-4 flex items-center gap-3 shrink-0">
         <Link href={`/events/${eventId}`} className="text-white">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
             <path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clipRule="evenodd" />
@@ -65,9 +65,9 @@ export default function SelectGroupPage() {
         <h1 className="text-lg font-bold">組を選択</h1>
       </div>
 
-      <div className="p-4 space-y-3">
+      <div className="flex-1 flex flex-col gap-3 p-4 overflow-auto">
         {groups.length === 0 ? (
-          <div className="text-center py-8">
+          <div className="flex-1 flex flex-col items-center justify-center">
             <p className="text-[#91855a] mb-4">組み合わせが設定されていません</p>
             <button
               onClick={() => router.push(`/events/${eventId}/score`)}
@@ -81,23 +81,23 @@ export default function SelectGroupPage() {
             <button
               key={group.id}
               onClick={() => router.push(`/events/${eventId}/score?group=${group.id}`)}
-              className="w-full bg-white rounded-lg shadow-sm p-4 text-left hover:bg-[#d6cabc]/20 transition-colors"
+              className="h-[20vh] bg-white rounded-lg shadow-sm px-5 py-3 text-left hover:bg-[#d6cabc]/20 transition-colors flex flex-col justify-center shrink-0"
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-bold text-lg text-[#1d3937]">
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-bold text-2xl text-[#1d3937]">
                   第{group.group_number}組
                 </span>
                 {group.start_time && (
-                  <span className="text-sm text-[#91855a]">
-                    {group.start_time}
+                  <span className="text-2xl font-bold text-[#91855a]">
+                    {group.start_time.slice(0, 5)} START
                   </span>
                 )}
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {group.group_members.map((m) => (
                   <span
                     key={m.player_id}
-                    className="px-3 py-1 bg-[#d6cabc] text-[#1d3937] rounded-full text-sm font-medium"
+                    className="py-2 bg-[#d6cabc] text-[#1d3937] rounded-lg text-xl font-medium text-center"
                   >
                     {m.players.name}
                   </span>

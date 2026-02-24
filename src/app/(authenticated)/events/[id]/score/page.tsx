@@ -546,14 +546,14 @@ export default function ScoreInputPage() {
   return (
     <div className="min-h-[100dvh] flex flex-col bg-[#cecdb9] select-none">
       {/* 1. メンバー選択（2行×2列） */}
-      <div className="flex-[2] grid grid-cols-2 gap-[1px] bg-[#22393c]">
+      <div className="flex-[2] grid grid-cols-2 gap-[1px] bg-[#22393c] border-b border-[#22393c]">
         {groupMembers.slice(0, 4).map((p) => {
           const memberScore = scores[scoreKey(p.player_id, currentHole)];
           return (
             <button
               key={p.player_id}
               onClick={() => handleMemberSwitch(p.player_id)}
-              className={`py-5 font-bold transition-colors relative overflow-hidden ${
+              className={`pt-3 pb-5 pl-3 font-bold transition-colors relative overflow-hidden flex items-start justify-start ${
                 selectedUserId === p.player_id
                   ? 'bg-[#22393c] text-white'
                   : 'bg-[#cecdb9] text-[#22393c]'

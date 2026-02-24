@@ -66,51 +66,55 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#d6cabc]/30">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
-        <div>
-          <h1 className="text-center text-3xl font-bold text-[#1d3937]">
-            ゴルフスコア管理
-          </h1>
-          <p className="mt-2 text-center text-sm text-[#91855a]">
-            月例会スコア管理システム
-          </p>
-        </div>
+    <div className="min-h-screen flex flex-col bg-[#1d3937]">
+      {/* 画像エリア（元の横幅・縦横比を保持） */}
+      <div className="relative w-full shrink-0">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/isprime.jpg"
+          alt="isPrime Golf"
+          className="w-full h-auto block"
+        />
+        {/* 上部：青グラデーション */}
+        <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-blue-900/60 to-transparent pointer-events-none" />
+        {/* 下部：黒グラデーション */}
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#1d3937] to-transparent pointer-events-none" />
+      </div>
 
-        <div className="mt-8 space-y-6">
-          {error && (
-            <div className="bg-[#91855a]/20 border border-[#91855a] text-[#1d3937] px-4 py-3 rounded text-center">
-              {error}
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-[#91855a] text-center mb-4">
-              PINコードを入力
-            </label>
-            <div className="flex justify-center gap-3">
-              {pin.map((digit, index) => (
-                <input
-                  key={index}
-                  ref={(el) => { inputRefs.current[index] = el; }}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleDigitChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  disabled={isLoading}
-                  className="w-14 h-14 text-center text-2xl font-bold border-2 border-[#d6cabc] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#195042] focus:border-[#195042] disabled:opacity-50 text-[#1d3937]"
-                  autoFocus={index === 0}
-                />
-              ))}
-            </div>
+      {/* PINエリア */}
+      <div className="px-8 pb-14 pt-4 space-y-5">
+        {error && (
+          <div className="bg-red-900/60 border border-red-400 text-white px-4 py-3 rounded text-center text-sm">
+            {error}
           </div>
+        )}
 
-          {isLoading && (
-            <p className="text-center text-sm text-[#91855a]">認証中...</p>
-          )}
+        <div>
+          <label className="block text-sm font-medium text-white/80 text-center mb-4">
+            PINコードを入力
+          </label>
+          <div className="flex justify-center gap-3">
+            {pin.map((digit, index) => (
+              <input
+                key={index}
+                ref={(el) => { inputRefs.current[index] = el; }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleDigitChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+                disabled={isLoading}
+                className="w-16 h-16 text-center text-3xl font-bold border-2 border-white/50 rounded-lg bg-white/20 text-white focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-50 backdrop-blur-sm"
+                autoFocus={index === 0}
+              />
+            ))}
+          </div>
         </div>
+
+        {isLoading && (
+          <p className="text-center text-sm text-white/70">認証中...</p>
+        )}
       </div>
     </div>
   );
