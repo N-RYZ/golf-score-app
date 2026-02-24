@@ -574,7 +574,7 @@ export default function ScoreInputPage() {
         </button>
 
         <div className="flex-1 flex flex-col items-center justify-center" style={{ backgroundColor: '#F5E6B3' }}>
-          <span className="text-sm font-bold mb-2" style={{ color: '#3A2800' }}>打数</span>
+          <span className="text-lg font-bold mb-2" style={{ color: '#3A2800' }}>打数</span>
           <span
             className="font-bold"
             style={{ fontSize: 'min(100px, 25vw)', color: '#1A0800' }}
@@ -613,7 +613,7 @@ export default function ScoreInputPage() {
         </button>
 
         <div className="flex-1 flex flex-col items-center justify-center bg-green-50">
-          <span className="text-sm font-bold text-gray-600 mb-2">パット</span>
+          <span className="text-lg font-bold text-gray-600 mb-2">パット</span>
           <span
             className="font-bold text-gray-900"
             style={{ fontSize: 'min(100px, 25vw)' }}
