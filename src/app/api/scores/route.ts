@@ -59,11 +59,13 @@ export async function PUT(req: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('Score upsert error:', JSON.stringify(error));
+      return NextResponse.json({ error: error.message ?? 'unknown', details: error.details, hint: error.hint, code: error.code, raw: JSON.stringify(error) }, { status: 500 });
     }
 
     return NextResponse.json(data);
-  } catch {
+  } catch (err) {
+    console.error('Score PUT error:', err);
     return NextResponse.json({ error: 'サーバーエラー' }, { status: 500 });
   }
 }

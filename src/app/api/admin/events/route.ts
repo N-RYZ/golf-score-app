@@ -16,12 +16,17 @@ export async function POST(req: NextRequest) {
     // イベント作成
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .insert({ name, event_date, course_id })
+      .insert({ name, event_date, course_id, status: 'upcoming' })
       .select('id')
       .single();
 
     if (eventError) {
+      console.error('Event insert error:', eventError);
       return NextResponse.json({ error: eventError.message }, { status: 500 });
+    }
+
+    if (!event) {
+      return NextResponse.json({ error: 'イベントの作成に失敗しました（データ取得エラー）' }, { status: 500 });
     }
 
     const eventId = event.id;
@@ -38,6 +43,7 @@ export async function POST(req: NextRequest) {
         .insert(participantRecords);
 
       if (partError) {
+        console.error('Participants insert error:', partError);
         await supabase.from('events').delete().eq('id', eventId);
         return NextResponse.json({ error: partError.message }, { status: 500 });
       }
@@ -57,8 +63,14 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (groupError) {
+          console.error('Group insert error:', groupError);
           await supabase.from('events').delete().eq('id', eventId);
           return NextResponse.json({ error: groupError.message }, { status: 500 });
+        }
+
+        if (!groupData) {
+          await supabase.from('events').delete().eq('id', eventId);
+          return NextResponse.json({ error: '組の作成に失敗しました（データ取得エラー）' }, { status: 500 });
         }
 
         if (group.members && group.members.length > 0) {
@@ -73,6 +85,7 @@ export async function POST(req: NextRequest) {
             .insert(memberRecords);
 
           if (memberError) {
+            console.error('Group members insert error:', memberError);
             await supabase.from('events').delete().eq('id', eventId);
             return NextResponse.json({ error: memberError.message }, { status: 500 });
           }
@@ -81,7 +94,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ id: eventId }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: 'サーバーエラー' }, { status: 500 });
+  } catch (err) {
+    console.error('Unexpected error in POST /api/admin/events:', err);
+    return NextResponse.json({ error: `サーバーエラー: ${err instanceof Error ? err.message : String(err)}` }, { status: 500 });
   }
 }

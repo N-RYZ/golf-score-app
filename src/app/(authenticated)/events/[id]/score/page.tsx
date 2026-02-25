@@ -47,7 +47,6 @@ export default function ScoreInputPage() {
   const [showAttest, setShowAttest] = useState(false);
   const [attestType, setAttestType] = useState<'front' | 'full' | null>(null);
 
-  const prevUserRef = useRef<string>('');
   const prevHoleRef = useRef<number>(1);
 
   // スコアのキー
@@ -223,9 +222,9 @@ export default function ScoreInputPage() {
 
   // スコア保存
   const saveScore = useCallback(
-    async (userId: string, holeNumber: number) => {
+    async (userId: string, holeNumber: number, scoreData?: ScoreData) => {
       const key = scoreKey(userId, holeNumber);
-      const score = scores[key];
+      const score = scoreData || scores[key];
       if (!score || (score.strokes === 0 && score.putts === 0)) return;
 
       const payload = {
@@ -254,11 +253,15 @@ export default function ScoreInputPage() {
 
       setSaving(true);
       try {
-        await fetch('/api/scores', {
+        const res = await fetch('/api/scores', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          console.error('Score save failed:', res.status, errBody);
+        }
       } catch {
         // 失敗時はペンディングに追加
         const pendingRaw = localStorage.getItem(PENDING_KEY(eventId));
@@ -274,21 +277,51 @@ export default function ScoreInputPage() {
   // メンバー切替時・ホール移動時に自動保存
   const handleMemberSwitch = useCallback(
     (newUserId: string) => {
-      // 前のユーザーのスコアを保存
-      if (prevUserRef.current) {
-        saveScore(prevUserRef.current, currentHole);
+      if (!selectedUserId || selectedUserId === newUserId) return;
+
+      const key = scoreKey(selectedUserId, currentHole);
+      const prevScore = scores[key];
+
+      if (prevScore?.isDefault) {
+        // 何も入力せずに切替 → デフォルト値を確定スコアとして保存
+        const confirmedScore = { ...prevScore, isDefault: false };
+        const newScores = { ...scores, [key]: confirmedScore };
+        setScores(newScores);
+        localStorage.setItem(STORAGE_KEY(eventId), JSON.stringify(newScores));
+        saveScore(selectedUserId, currentHole, confirmedScore);
+      } else {
+        saveScore(selectedUserId, currentHole);
       }
-      prevUserRef.current = newUserId;
+
       setSelectedUserId(newUserId);
     },
-    [saveScore, currentHole]
+    [selectedUserId, saveScore, currentHole, scores, eventId]
   );
 
   const handleHoleChange = useCallback(
     (newHole: number) => {
-      // 現在のホールの全メンバーのスコアを保存
-      getGroupMembers().forEach((member) => {
-        saveScore(member.player_id, currentHole);
+      // 現在のホールの全メンバーのスコアを保存（デフォルト値も確定スコアとして扱う）
+      const members = getGroupMembers();
+      let updatedScores = { ...scores };
+      let hasConfirmed = false;
+
+      members.forEach((member) => {
+        const key = scoreKey(member.player_id, currentHole);
+        const memberScore = updatedScores[key];
+        if (memberScore?.isDefault) {
+          updatedScores[key] = { ...memberScore, isDefault: false };
+          hasConfirmed = true;
+        }
+      });
+
+      if (hasConfirmed) {
+        setScores(updatedScores);
+        localStorage.setItem(STORAGE_KEY(eventId), JSON.stringify(updatedScores));
+      }
+
+      members.forEach((member) => {
+        const key = scoreKey(member.player_id, currentHole);
+        saveScore(member.player_id, currentHole, updatedScores[key]);
       });
 
       // 9H終了後（10Hに進む前）にアテスト画面を表示
@@ -310,8 +343,13 @@ export default function ScoreInputPage() {
 
       prevHoleRef.current = newHole;
       setCurrentHole(newHole);
+
+      // ホール変更時は先頭メンバーを選択
+      if (members.length > 0) {
+        setSelectedUserId(members[0].player_id);
+      }
     },
-    [saveScore, currentHole, getGroupMembers]
+    [saveScore, currentHole, getGroupMembers, scores, eventId]
   );
 
   // アテスト確認OK
