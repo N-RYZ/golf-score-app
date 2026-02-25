@@ -279,6 +279,7 @@ export default function PlayersPage() {
 
       {/* プレイヤー一覧 */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-[#d6cabc]">
           <thead className="bg-[#d6cabc]">
             <tr>
@@ -332,6 +333,7 @@ export default function PlayersPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {players.length === 0 && (
