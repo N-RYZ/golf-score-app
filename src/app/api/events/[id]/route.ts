@@ -65,13 +65,14 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 export async function PUT(req: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const { name, event_date, course_id, status, participants, groups } = await req.json();
+    const { name, event_date, course_id, event_type, status, participants, groups } = await req.json();
 
     // 基本情報の更新
     const updates: Record<string, string> = {};
     if (name) updates.name = name;
     if (event_date) updates.event_date = event_date;
     if (course_id) updates.course_id = course_id;
+    if (event_type) updates.event_type = event_type;
     if (status) updates.status = status;
 
     if (Object.keys(updates).length > 0) {

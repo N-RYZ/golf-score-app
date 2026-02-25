@@ -7,6 +7,9 @@ export async function GET(req: NextRequest) {
   const year = req.nextUrl.searchParams.get('year');
   const finalized = req.nextUrl.searchParams.get('finalized');
 
+  // 予定・進行中は古い順、完了・すべては新しい順
+  const ascending = status === 'upcoming' || status === 'in_progress';
+
   let query = supabase
     .from('events')
     .select(`
@@ -14,7 +17,7 @@ export async function GET(req: NextRequest) {
       courses ( id, name ),
       event_participants ( id, player_id, players ( id, name ) )
     `)
-    .order('event_date', { ascending: false });
+    .order('event_date', { ascending });
 
   if (status && status !== 'all') {
     query = query.eq('status', status);

@@ -28,7 +28,7 @@ type EventInfo = {
 
 // ローカルストレージキー
 const STORAGE_KEY = (eventId: string) => `golf-scores-${eventId}`;
-const LAST_POS_KEY = (eventId: string) => `golf-lastpos-${eventId}`;
+const LAST_POS_KEY = (eventId: string, groupId?: string | null) => `golf-lastpos-${eventId}-${groupId || 'all'}`;
 const PENDING_KEY = (eventId: string) => `golf-pending-${eventId}`;
 
 export default function ScoreInputPage() {
@@ -120,7 +120,7 @@ export default function ScoreInputPage() {
     const members = getGroupMembers();
     if (members.length === 0) return;
 
-    const lastPos = localStorage.getItem(LAST_POS_KEY(eventId));
+    const lastPos = localStorage.getItem(LAST_POS_KEY(eventId, groupId));
     if (lastPos) {
       const { hole, userId } = JSON.parse(lastPos);
       setCurrentHole(hole);
@@ -139,7 +139,7 @@ export default function ScoreInputPage() {
   useEffect(() => {
     if (selectedUserId && currentHole) {
       localStorage.setItem(
-        LAST_POS_KEY(eventId),
+        LAST_POS_KEY(eventId, groupId),
         JSON.stringify({ hole: currentHole, userId: selectedUserId })
       );
     }
@@ -584,8 +584,17 @@ export default function ScoreInputPage() {
   return (
     <div className="min-h-[100dvh] flex flex-col bg-[#cecdb9] select-none">
       {/* 1. メンバー選択（2行×2列） */}
-      <div className="flex-[2] grid grid-cols-2 gap-[1px] bg-[#22393c] border-b border-[#22393c]">
-        {groupMembers.slice(0, 4).map((p) => {
+      <div className="flex-[2] grid grid-cols-2 gap-[1px] bg-[#b0ae9e]">
+        {Array.from({ length: 4 }).map((_, i) => {
+          const p = groupMembers[i];
+          if (!p) {
+            return (
+              <div
+                key={`empty-${i}`}
+                className="bg-[#afbb98]"
+              />
+            );
+          }
           const memberScore = scores[scoreKey(p.player_id, currentHole)];
           return (
             <button
@@ -616,8 +625,8 @@ export default function ScoreInputPage() {
       <div className="flex-[2] flex" style={{ backgroundColor: '#cecdb9' }}>
         <button
           onClick={() => updateScore('strokes', -1)}
-          className="flex-1 flex items-center justify-center border-r-2 active:opacity-70"
-          style={{ backgroundColor: '#deded4', borderRightColor: '#afbb98' }}
+          className="flex-1 flex items-center justify-center border-r active:opacity-70"
+          style={{ backgroundColor: '#deded4', borderRightColor: '#c5c3b0' }}
         >
           <span className="text-[min(80px,20vw)] leading-none font-light" style={{ color: '#46707e' }}>
             −
@@ -643,8 +652,8 @@ export default function ScoreInputPage() {
 
         <button
           onClick={() => updateScore('strokes', 1)}
-          className="flex-1 flex items-center justify-center border-l-2 active:opacity-80"
-          style={{ backgroundColor: '#46707e', borderLeftColor: '#22393c' }}
+          className="flex-1 flex items-center justify-center border-l active:opacity-80"
+          style={{ backgroundColor: '#46707e', borderLeftColor: '#35575f' }}
         >
           <span className="text-[min(80px,20vw)] leading-none text-white font-bold">
             +
@@ -656,8 +665,8 @@ export default function ScoreInputPage() {
       <div className="flex-[2] flex" style={{ backgroundColor: '#afbb98' }}>
         <button
           onClick={() => updateScore('putts', -1)}
-          className="flex-1 flex items-center justify-center border-r-2 active:opacity-70"
-          style={{ backgroundColor: '#cecdb9', borderRightColor: '#afbb98' }}
+          className="flex-1 flex items-center justify-center border-r active:opacity-70"
+          style={{ backgroundColor: '#cecdb9', borderRightColor: '#bdc7aa' }}
         >
           <span className="text-[min(80px,20vw)] leading-none font-light" style={{ color: '#46707e' }}>
             −
@@ -676,8 +685,8 @@ export default function ScoreInputPage() {
 
         <button
           onClick={() => updateScore('putts', 1)}
-          className="flex-1 flex items-center justify-center border-l-2 active:opacity-80"
-          style={{ backgroundColor: '#6b8b81', borderLeftColor: '#22393c' }}
+          className="flex-1 flex items-center justify-center border-l active:opacity-80"
+          style={{ backgroundColor: '#6b8b81', borderLeftColor: '#4a6e67' }}
         >
           <span className="text-[min(80px,20vw)] leading-none text-white font-bold">
             +

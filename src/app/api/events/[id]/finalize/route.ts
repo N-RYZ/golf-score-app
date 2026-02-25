@@ -15,9 +15,9 @@ type EventResultItem = {
 
 // ポイントテーブル
 const POINTS_TABLE: Record<string, Record<number, number>> = {
-  regular: { 1: 16, 2: 8, 3: 4, 4: 2, 5: 1 },
-  major: { 1: 21, 2: 12, 3: 7, 4: 4, 5: 2 },
-  final: { 1: 26, 2: 16, 3: 10, 4: 6, 5: 3 }
+  '1': { 1: 16, 2: 8, 3: 4, 4: 2, 5: 1 },
+  '2': { 1: 21, 2: 12, 3: 7, 4: 4, 5: 2 },
+  '3': { 1: 26, 2: 16, 3: 10, 4: 6, 5: 3 }
 };
 
 // ハンデキャップ計算（基本ルール）
@@ -40,7 +40,7 @@ function calculateHandicapUpdate(
   const coefficients: Record<number, number> = { 1: 0.7, 2: 0.8, 3: 0.9 };
   const coefficient = coefficients[rank] || 1.0;
 
-  let nextHandicap = Math.floor(adjustedHandicap * coefficient * 10) / 10;
+  let nextHandicap = Math.floor(adjustedHandicap * coefficient);
 
   // ハンデが以下の場合の加算（1位:+3、2位:+2、3位:+1）
   if (rank <= 3 && adjustedHandicap < nextHandicap) {
@@ -146,7 +146,7 @@ export async function POST(
     results.forEach((result, index) => {
       const rank = index + 1;
       result.rank = rank;
-      result.points = POINTS_TABLE[event.event_type || 'regular'][rank] || 0;
+      result.points = POINTS_TABLE[event.event_type || '1'][rank] || 0;
 
       // ハンデ更新計算（上位3位のみ）
       if (rank <= 3) {

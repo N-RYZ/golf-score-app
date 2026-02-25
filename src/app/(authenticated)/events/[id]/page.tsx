@@ -480,7 +480,7 @@ export default function EventDetailPage() {
                 <div className="bg-[#d6cabc] border border-[#91855a] rounded-lg p-3 text-xs text-[#1d3937]">
                   <p className="font-bold mb-1">イベント情報</p>
                   <p>
-                    種別: {event.event_type === 'major' ? 'メジャー大会' : event.event_type === 'final' ? '最終戦' : '通常大会'}
+                    種別: {event.event_type === '2' ? 'メジャー大会' : event.event_type === '3' ? '最終戦' : '通常大会'}
                   </p>
                 </div>
               </>

@@ -8,6 +8,7 @@ type Event = {
   name: string;
   event_date: string;
   status: 'upcoming' | 'in_progress' | 'completed';
+  event_type?: string;
   courses: { id: string; name: string } | null;
   event_participants: { id: string }[];
 };
@@ -19,11 +20,12 @@ const STATUS_LABELS: Record<string, string> = {
   all: 'すべて',
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  upcoming: 'bg-[#d6cabc] text-[#1d3937]',
-  in_progress: 'bg-[#195042] text-white',
-  completed: 'bg-[#91855a] text-white',
-};
+const CARD_GRADIENTS = [
+  { from: '#1d3937', to: '#195042', textMain: '#ffffff', textSub: 'rgba(255,255,255,0.65)' },
+  { from: '#195042', to: '#91855a', textMain: '#ffffff', textSub: 'rgba(255,255,255,0.65)' },
+  { from: '#91855a', to: '#d6cabc', textMain: '#1d3937', textSub: 'rgba(29,57,55,0.65)' },
+  { from: '#d6cabc', to: '#1d3937', textMain: '#ffffff', textSub: 'rgba(255,255,255,0.65)' },
+];
 
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -79,31 +81,36 @@ export default function EventsPage() {
           <p className="text-[#91855a] text-sm">イベントがありません</p>
         ) : (
           <div className="space-y-3">
-            {events.map((event) => (
-              <Link
-                key={event.id}
-                href={`/events/${event.id}`}
-                className="block bg-white rounded-lg shadow p-4"
-              >
-                <div className="flex items-center gap-4">
-                  {/* 1列目：MM/DD・YYYY */}
-                  <div className="shrink-0 w-16 text-center border-r border-[#d6cabc] pr-3">
-                    <p className="text-base font-bold text-[#1d3937]">{formatDate(event.event_date).slice(5)}</p>
-                    <p className="text-xs text-[#91855a]">{formatDate(event.event_date).slice(0, 4)}</p>
-                  </div>
-                  {/* 2列目：コース・参加者 / イベント名・ステータス */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      {event.courses && (
-                        <p className="text-xs text-[#91855a] truncate">{event.courses.name}</p>
-                      )}
-                      <p className="text-xs text-[#91855a] shrink-0">{event.event_participants?.length || 0}人</p>
+            {events.map((event) => {
+              const typeIndex: Record<string, number> = { '1': 0, 'regular': 0, '2': 1, 'major': 1, '3': 2, 'final': 2 };
+              const g = CARD_GRADIENTS[typeIndex[event.event_type || '1'] ?? 0];
+              return (
+                <Link
+                  key={event.id}
+                  href={`/events/${event.id}`}
+                  className="block rounded-lg shadow p-4"
+                  style={{ background: `linear-gradient(to right, ${g.from}, ${g.to})` }}
+                >
+                  <div className="flex items-center gap-4">
+                    {/* 1列目：MM/DD・YYYY */}
+                    <div className="shrink-0 w-16 text-center border-r pr-3" style={{ borderColor: g.textSub }}>
+                      <p className="text-base font-bold" style={{ color: g.textMain }}>{formatDate(event.event_date).slice(5)}</p>
+                      <p className="text-xs" style={{ color: g.textSub }}>{formatDate(event.event_date).slice(0, 4)}</p>
                     </div>
-                    <p className="font-bold text-[#1d3937]">{event.name}</p>
+                    {/* 2列目：コース・参加者 / イベント名 */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        {event.courses && (
+                          <p className="text-xs truncate" style={{ color: g.textSub }}>{event.courses.name}</p>
+                        )}
+                        <p className="text-xs shrink-0" style={{ color: g.textSub }}>{event.event_participants?.length || 0}人</p>
+                      </div>
+                      <p className="font-bold" style={{ color: g.textMain }}>{event.name}</p>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
       </main>

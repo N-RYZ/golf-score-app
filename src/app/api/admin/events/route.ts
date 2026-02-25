@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 // イベント作成（参加者・組み合わせ含む）
 export async function POST(req: NextRequest) {
   try {
-    const { name, event_date, course_id, participants, groups } = await req.json();
+    const { name, event_date, course_id, event_type, participants, groups } = await req.json();
 
     if (!name || !event_date || !course_id) {
       return NextResponse.json(
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     // イベント作成
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .insert({ name, event_date, course_id, status: 'upcoming' })
+      .insert({ name, event_date, course_id, event_type: event_type || '1', status: 'upcoming' })
       .select('id')
       .single();
 

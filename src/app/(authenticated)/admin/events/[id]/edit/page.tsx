@@ -23,6 +23,7 @@ export default function EditEventPage() {
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [courseId, setCourseId] = useState('');
+  const [eventType, setEventType] = useState<'1' | '2' | '3'>('1');
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [groups, setGroups] = useState<GroupDraft[]>([]);
   const [error, setError] = useState('');
@@ -45,6 +46,7 @@ export default function EditEventPage() {
       setEventName(ev.name);
       setEventDate(ev.event_date);
       setCourseId(ev.courses?.id || '');
+      setEventType(ev.event_type || '1');
       setSelectedParticipants(
         ev.event_participants?.map((p: { player_id: string }) => p.player_id) || []
       );
@@ -146,6 +148,7 @@ export default function EditEventPage() {
         name: eventName,
         event_date: eventDate,
         course_id: courseId,
+        event_type: eventType,
         participants: selectedParticipants,
         groups: groups.filter((g) => g.members.length > 0),
       }),
@@ -248,6 +251,25 @@ export default function EditEventPage() {
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#91855a] mb-1">大会種別</label>
+              <div className="grid grid-cols-3 gap-2">
+                {([['1', '通常大会'], ['2', 'メジャー大会'], ['3', '最終戦']] as const).map(([val, label]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setEventType(val)}
+                    className={`py-2 rounded-md text-sm font-medium border transition-colors ${
+                      eventType === val
+                        ? 'bg-gradient-to-r from-[#1d3937] to-[#195042] text-white border-[#1d3937]'
+                        : 'bg-white text-[#91855a] border-[#d6cabc]'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           </section>
 
