@@ -56,7 +56,7 @@ export default function SelectGroupPage() {
 
   return (
     <div className="h-screen flex flex-col bg-[#d6cabc]/30">
-      <div className="bg-[#1d3937] text-white px-4 py-4 flex items-center gap-3 shrink-0">
+      <div className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-4 py-4 flex items-center gap-3 shrink-0">
         <Link href={`/events/${eventId}`} className="text-white">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
             <path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clipRule="evenodd" />
@@ -71,7 +71,7 @@ export default function SelectGroupPage() {
             <p className="text-[#91855a] mb-4">組み合わせが設定されていません</p>
             <button
               onClick={() => router.push(`/events/${eventId}/score`)}
-              className="px-6 py-3 bg-[#1d3937] text-white font-bold rounded-lg"
+              className="px-6 py-3 bg-gradient-to-r from-[#1d3937] to-[#195042] text-white font-bold rounded-lg"
             >
               全員でスコア入力
             </button>

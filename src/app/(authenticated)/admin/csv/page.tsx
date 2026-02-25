@@ -98,7 +98,7 @@ export default function CsvPage() {
 
   return (
     <div className="min-h-screen bg-[#d6cabc]/30">
-      <header className="bg-[#1d3937] text-white px-4 py-3 flex items-center gap-3">
+      <header className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-4 py-3 flex items-center gap-3">
         <button onClick={() => router.push('/admin')} className="text-white">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
             <path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clipRule="evenodd" />
@@ -129,7 +129,7 @@ export default function CsvPage() {
           <button
             onClick={downloadBulkCsv}
             disabled={downloading === 'bulk'}
-            className="w-full bg-[#1d3937] text-white py-2 rounded-md text-sm font-bold disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-[#1d3937] to-[#195042] text-white py-2 rounded-md text-sm font-bold disabled:opacity-50"
           >
             {downloading === 'bulk' ? 'ダウンロード中...' : '一括ダウンロード'}
           </button>
@@ -156,7 +156,7 @@ export default function CsvPage() {
                   <button
                     onClick={() => downloadEventCsv(event.id)}
                     disabled={downloading === event.id}
-                    className="bg-[#1d3937] text-white px-3 py-1 rounded-md text-sm font-bold disabled:opacity-50"
+                    className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-3 py-1 rounded-md text-sm font-bold disabled:opacity-50"
                   >
                     {downloading === event.id ? '...' : 'CSV'}
                   </button>

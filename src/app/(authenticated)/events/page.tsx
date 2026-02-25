@@ -27,7 +27,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('upcoming');
   const [loading, setLoading] = useState(true);
 
   const fetchEvents = useCallback(async () => {
@@ -50,7 +50,7 @@ export default function EventsPage() {
 
   return (
     <div className="min-h-screen bg-[#d6cabc]/30">
-      <header className="bg-[#1d3937] text-white px-4 py-3">
+      <header className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-4 py-3">
         <h1 className="text-lg font-bold">イベント一覧</h1>
       </header>
 
@@ -61,9 +61,9 @@ export default function EventsPage() {
             <button
               key={key}
               onClick={() => setFilter(key)}
-              className={`flex-1 py-2 text-sm font-medium transition-colors ${
+              className={`flex-1 py-3 text-lg font-medium transition-colors ${
                 filter === key
-                  ? 'bg-[#1d3937] text-white'
+                  ? 'bg-gradient-to-r from-[#1d3937] to-[#195042] text-white'
                   : 'bg-white text-[#91855a] border border-[#d6cabc]'
               }`}
             >
@@ -85,22 +85,22 @@ export default function EventsPage() {
                 href={`/events/${event.id}`}
                 className="block bg-white rounded-lg shadow p-4"
               >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-bold text-[#1d3937]">{event.name}</p>
-                    <p className="text-sm text-[#91855a] mt-1">
-                      {formatDate(event.event_date)}
-                    </p>
-                    {event.courses && (
-                      <p className="text-sm text-[#91855a]">{event.courses.name}</p>
-                    )}
-                    <p className="text-xs text-[#91855a] mt-1">
-                      参加者: {event.event_participants?.length || 0}人
-                    </p>
+                <div className="flex items-center gap-4">
+                  {/* 1列目：MM/DD・YYYY */}
+                  <div className="shrink-0 w-16 text-center border-r border-[#d6cabc] pr-3">
+                    <p className="text-base font-bold text-[#1d3937]">{formatDate(event.event_date).slice(5)}</p>
+                    <p className="text-xs text-[#91855a]">{formatDate(event.event_date).slice(0, 4)}</p>
                   </div>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${STATUS_COLORS[event.status]}`}>
-                    {STATUS_LABELS[event.status]}
-                  </span>
+                  {/* 2列目：コース・参加者 / イベント名・ステータス */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      {event.courses && (
+                        <p className="text-xs text-[#91855a] truncate">{event.courses.name}</p>
+                      )}
+                      <p className="text-xs text-[#91855a] shrink-0">{event.event_participants?.length || 0}人</p>
+                    </div>
+                    <p className="font-bold text-[#1d3937]">{event.name}</p>
+                  </div>
                 </div>
               </Link>
             ))}

@@ -48,7 +48,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const { name, gender, birth_year, initial_handicap, current_handicap, year } = await req.json();
+    const { name, gender, birth_year, initial_handicap, current_handicap, total_points, year } = await req.json();
 
     // プレイヤー基本情報を更新
     const updateData: any = {};
@@ -74,10 +74,11 @@ export async function PUT(
     }
 
     // 年度別成績を更新（指定された場合）
-    if (year && (initial_handicap !== undefined || current_handicap !== undefined)) {
+    if (year && (initial_handicap !== undefined || current_handicap !== undefined || total_points !== undefined)) {
       const statsUpdate: any = {};
       if (initial_handicap !== undefined) statsUpdate.initial_handicap = initial_handicap;
       if (current_handicap !== undefined) statsUpdate.current_handicap = current_handicap;
+      if (total_points !== undefined) statsUpdate.total_points = total_points;
 
       const { error: statsError } = await supabase
         .from('player_season_stats')

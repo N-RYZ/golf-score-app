@@ -66,23 +66,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#1d3937]">
-      {/* 画像エリア（元の横幅・縦横比を保持） */}
-      <div className="relative w-full shrink-0">
+    <div className="h-dvh flex flex-col bg-[#1d3937]">
+      {/* 画像エリア（残りの高さを埋める・横幅フル） */}
+      <div className="flex-1 relative min-h-0 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/isprime.jpg"
           alt="isPrime Golf"
-          className="w-full h-auto block"
+          className="absolute inset-0 w-full h-full object-cover object-top"
         />
-        {/* 上部：青グラデーション */}
-        <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-blue-900/60 to-transparent pointer-events-none" />
-        {/* 下部：黒グラデーション */}
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#1d3937] to-transparent pointer-events-none" />
+        {/* 下部：PINエリアへのグラデーション */}
+        <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-[#1d3937] to-transparent pointer-events-none" />
       </div>
 
-      {/* PINエリア */}
-      <div className="px-8 pb-14 pt-4 space-y-5">
+      {/* PINエリア（固定高さ） */}
+      <div className="shrink-0 px-8 pb-12 pt-6 space-y-5">
         {error && (
           <div className="bg-red-900/60 border border-red-400 text-white px-4 py-3 rounded text-center text-sm">
             {error}

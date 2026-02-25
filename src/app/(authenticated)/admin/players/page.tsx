@@ -30,6 +30,8 @@ export default function PlayersPage() {
   const [formGender, setFormGender] = useState<'male' | 'female'>('male');
   const [formBirthYear, setFormBirthYear] = useState('');
   const [formInitialHandicap, setFormInitialHandicap] = useState('');
+  const [formCurrentHandicap, setFormCurrentHandicap] = useState('');
+  const [formTotalPoints, setFormTotalPoints] = useState('');
   const [error, setError] = useState('');
 
   const fetchPlayers = useCallback(async () => {
@@ -53,6 +55,8 @@ export default function PlayersPage() {
     setFormGender('male');
     setFormBirthYear('');
     setFormInitialHandicap('');
+    setFormCurrentHandicap('');
+    setFormTotalPoints('');
     setEditingId(null);
     setShowForm(false);
     setError('');
@@ -69,7 +73,8 @@ export default function PlayersPage() {
         gender: formGender,
         birth_year: formBirthYear ? parseInt(formBirthYear) : null,
         initial_handicap: formInitialHandicap ? parseFloat(formInitialHandicap) : null,
-        current_handicap: formInitialHandicap ? parseFloat(formInitialHandicap) : null,
+        current_handicap: formCurrentHandicap ? parseFloat(formCurrentHandicap) : null,
+        total_points: formTotalPoints ? parseInt(formTotalPoints) : 0,
         year
       };
 
@@ -119,6 +124,8 @@ export default function PlayersPage() {
     setFormGender((player.gender || 'male') as 'male' | 'female');
     setFormBirthYear(player.birth_year?.toString() || '');
     setFormInitialHandicap(player.initial_handicap?.toString() || '');
+    setFormCurrentHandicap(player.current_handicap?.toString() || '');
+    setFormTotalPoints(player.total_points?.toString() || '0');
     setEditingId(player.id);
     setShowForm(true);
   };
@@ -139,27 +146,35 @@ export default function PlayersPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-[#1d3937]">プレイヤー管理</h1>
+    <div className="min-h-screen bg-[#d6cabc]/30">
+      <header className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button onClick={() => router.push('/admin')} className="text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+              <path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clipRule="evenodd" />
+            </svg>
+          </button>
+          <h1 className="text-lg font-bold">プレイヤー管理</h1>
+        </div>
+        <div className="flex items-center gap-2">
           <select
             value={year}
             onChange={(e) => setYear(parseInt(e.target.value))}
-            className="px-3 py-2 border border-[#d6cabc] rounded-lg text-[#1d3937]"
+            className="px-2 py-1 rounded text-[#1d3937] text-sm bg-white border border-white/30"
           >
             {[2026, 2027, 2028].map(y => (
               <option key={y} value={y}>{y}年度</option>
             ))}
           </select>
+          <button
+            onClick={() => setShowForm(true)}
+            className="px-3 py-1 bg-white text-[#1d3937] rounded text-sm font-bold"
+          >
+            + 登録
+          </button>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="px-4 py-2 bg-[#1d3937] text-white rounded-lg hover:bg-[#195042]"
-        >
-          新規プレイヤー登録
-        </button>
-      </div>
+      </header>
+      <main className="p-4">
 
       {/* 登録・編集フォーム */}
       {showForm && (
@@ -203,24 +218,49 @@ export default function PlayersPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1 text-[#91855a]">{year}年度 初期ハンデ*</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={formInitialHandicap}
-                  onChange={(e) => setFormInitialHandicap(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#d6cabc] rounded-lg text-[#1d3937]"
-                  required
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-[#91855a]">{year}年度 初期HC{!editingId && '*'}</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={formInitialHandicap}
+                    onChange={(e) => setFormInitialHandicap(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#d6cabc] rounded-lg text-[#1d3937]"
+                    required={!editingId}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-[#91855a]">{year}年度 現在HC</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={formCurrentHandicap}
+                    onChange={(e) => setFormCurrentHandicap(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#d6cabc] rounded-lg text-[#1d3937]"
+                  />
+                </div>
               </div>
+
+              {editingId && (
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-[#91855a]">{year}年度 ポイント</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formTotalPoints}
+                    onChange={(e) => setFormTotalPoints(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#d6cabc] rounded-lg text-[#1d3937]"
+                  />
+                </div>
+              )}
 
               {error && <p className="text-[#91855a] text-sm">{error}</p>}
 
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-[#1d3937] text-white rounded-lg hover:bg-[#195042]"
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-[#1d3937] to-[#195042] text-white rounded-lg hover:opacity-90"
                 >
                   {editingId ? '更新' : '登録'}
                 </button>
@@ -297,6 +337,7 @@ export default function PlayersPage() {
       {players.length === 0 && (
         <p className="text-center text-[#91855a] py-8">プレイヤーが登録されていません</p>
       )}
+      </main>
     </div>
   );
 }

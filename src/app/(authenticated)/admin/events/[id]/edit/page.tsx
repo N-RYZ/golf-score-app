@@ -75,14 +75,23 @@ export default function EditEventPage() {
   };
 
   const addGroup = () => {
-    setGroups((prev) => [
-      ...prev,
-      {
-        group_number: prev.length + 1,
-        start_time: '08:00',
-        members: [],
-      },
-    ]);
+    setGroups((prev) => {
+      const lastTime = prev.length > 0 ? prev[prev.length - 1].start_time : null;
+      let nextTime = '08:00';
+      if (lastTime) {
+        const [h, m] = lastTime.split(':').map(Number);
+        const total = h * 60 + m + 6;
+        nextTime = `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+      }
+      return [
+        ...prev,
+        {
+          group_number: prev.length + 1,
+          start_time: nextTime,
+          members: [],
+        },
+      ];
+    });
   };
 
   const removeGroup = (index: number) => {
@@ -185,7 +194,7 @@ export default function EditEventPage() {
 
   return (
     <div className="min-h-screen bg-[#d6cabc]/30">
-      <header className="bg-[#1d3937] text-white px-4 py-3 flex items-center gap-3">
+      <header className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-4 py-3 flex items-center gap-3">
         <button onClick={() => router.push(`/events/${eventId}`)} className="text-white">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
             <path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clipRule="evenodd" />
@@ -255,7 +264,7 @@ export default function EditEventPage() {
                   onClick={() => toggleParticipant(m.id)}
                   className={`px-3 py-2 rounded-md text-sm font-medium border transition-colors ${
                     selectedParticipants.includes(m.id)
-                      ? 'bg-[#1d3937] text-white border-[#1d3937]'
+                      ? 'bg-gradient-to-r from-[#1d3937] to-[#195042] text-white border-[#1d3937]'
                       : 'bg-white text-[#91855a] border-[#d6cabc]'
                   }`}
                 >
@@ -272,7 +281,7 @@ export default function EditEventPage() {
               <button
                 type="button"
                 onClick={addGroup}
-                className="bg-[#1d3937] text-white px-3 py-1 rounded-md text-sm font-bold"
+                className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-3 py-1 rounded-md text-sm font-bold"
               >
                 + 組追加
               </button>
@@ -289,12 +298,27 @@ export default function EditEventPage() {
                     {group.group_number}組
                   </span>
                   <div className="flex items-center gap-2">
-                    <input
-                      type="time"
-                      value={group.start_time}
-                      onChange={(e) => updateGroupTime(gi, e.target.value)}
-                      className="px-2 py-1 border border-[#d6cabc] rounded text-sm text-[#1d3937]"
-                    />
+                    <div className="flex items-center gap-1">
+                      <select
+                        value={group.start_time.slice(0, 2)}
+                        onChange={(e) => updateGroupTime(gi, `${e.target.value}:${group.start_time.slice(3, 5)}`)}
+                        className="px-1 py-1 border border-[#d6cabc] rounded text-sm text-[#1d3937]"
+                      >
+                        {Array.from({ length: 13 }, (_, i) => i + 5).map((h) => (
+                          <option key={h} value={String(h).padStart(2, '0')}>{String(h).padStart(2, '0')}</option>
+                        ))}
+                      </select>
+                      <span className="text-[#1d3937] font-bold">:</span>
+                      <select
+                        value={group.start_time.slice(3, 5)}
+                        onChange={(e) => updateGroupTime(gi, `${group.start_time.slice(0, 2)}:${e.target.value}`)}
+                        className="px-1 py-1 border border-[#d6cabc] rounded text-sm text-[#1d3937]"
+                      >
+                        {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
                     <button
                       type="button"
                       onClick={() => removeGroup(gi)}
@@ -311,7 +335,7 @@ export default function EditEventPage() {
                     <span
                       key={userId}
                       onClick={() => toggleGroupMember(gi, userId)}
-                      className="bg-[#1d3937] text-white px-2 py-1 rounded text-xs cursor-pointer"
+                      className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-2 py-1 rounded text-xs cursor-pointer"
                     >
                       {getMemberName(userId)} ×
                     </span>
@@ -341,7 +365,7 @@ export default function EditEventPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-[#1d3937] text-white py-3 rounded-lg font-bold text-base disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-[#1d3937] to-[#195042] text-white py-3 rounded-lg font-bold text-base disabled:opacity-50"
           >
             {submitting ? '更新中...' : 'イベントを更新'}
           </button>

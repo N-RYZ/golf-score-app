@@ -64,7 +64,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-[#d6cabc]/30">
-      <div className="bg-[#1d3937] text-white px-4 py-4">
+      <div className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-4 py-4">
         <h1 className="text-lg font-bold">管理メニュー</h1>
       </div>
 

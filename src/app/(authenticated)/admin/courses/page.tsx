@@ -114,7 +114,7 @@ export default function CoursesPage() {
 
   return (
     <div className="min-h-screen bg-[#d6cabc]/30">
-      <header className="bg-[#1d3937] text-white px-4 py-3 flex items-center justify-between">
+      <header className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push('/admin')} className="text-white">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
@@ -212,7 +212,7 @@ export default function CoursesPage() {
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="flex-1 bg-[#1d3937] text-white py-2 rounded-md text-sm font-bold"
+                className="flex-1 bg-gradient-to-r from-[#1d3937] to-[#195042] text-white py-2 rounded-md text-sm font-bold"
               >
                 {editingId ? '更新' : '登録'}
               </button>

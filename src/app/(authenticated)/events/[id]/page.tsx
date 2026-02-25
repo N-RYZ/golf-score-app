@@ -207,7 +207,7 @@ export default function EventDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#d6cabc]/30">
-      <header className="bg-[#1d3937] text-white px-4 py-3">
+      <header className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-4 py-3">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push('/events')} className="text-white">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
@@ -238,7 +238,7 @@ export default function EventDetailPage() {
         <div className="px-4 pt-3">
           <Link
             href={`/events/${eventId}/score/select-group`}
-            className="block w-full bg-[#1d3937] text-white text-center py-3 rounded-lg font-bold"
+            className="block w-full bg-gradient-to-r from-[#1d3937] to-[#195042] text-white text-center py-3 rounded-lg font-bold"
           >
             スコア入力
           </Link>
@@ -302,7 +302,7 @@ export default function EventDetailPage() {
                       </th>
                     ))}
                     <th className="px-1 py-1 text-center font-bold bg-[#195042] text-white">IN</th>
-                    <th className="px-1 py-1 text-center font-bold bg-[#1d3937] text-white">計</th>
+                    <th className="px-1 py-1 text-center font-bold bg-gradient-to-r from-[#1d3937] to-[#195042] text-white">計</th>
                     <th className="px-1 py-1 text-center font-bold bg-[#91855a] text-white">P-Point</th>
                   </tr>
                   <tr className="bg-[#d6cabc]/50 text-[#91855a]">
