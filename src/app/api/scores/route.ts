@@ -70,6 +70,26 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+// スコア削除（イベント単位）
+export async function DELETE(req: NextRequest) {
+  const eventId = req.nextUrl.searchParams.get('event_id');
+
+  if (!eventId) {
+    return NextResponse.json({ error: 'event_id is required' }, { status: 400 });
+  }
+
+  const { error } = await supabase
+    .from('scores')
+    .delete()
+    .eq('event_id', eventId);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}
+
 // スコア一括保存
 export async function POST(req: NextRequest) {
   try {

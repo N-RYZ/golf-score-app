@@ -164,6 +164,28 @@ export default function EditEventPage() {
     router.push(`/events/${eventId}`);
   };
 
+  const handleDeleteScores = async () => {
+    if (!confirm(`「${eventName}」のスコアをすべて削除してもよろしいですか？\nこの操作は取り消せません。`)) {
+      return;
+    }
+
+    setSubmitting(true);
+
+    const res = await fetch(`/api/scores?event_id=${eventId}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error || 'スコアの削除に失敗しました');
+      setSubmitting(false);
+      return;
+    }
+
+    setSubmitting(false);
+    alert('スコアを削除しました');
+  };
+
   const handleDelete = async () => {
     if (!confirm(`「${eventName}」を削除してもよろしいですか？\nこの操作は取り消せません。`)) {
       return;
@@ -392,6 +414,16 @@ export default function EditEventPage() {
             {submitting ? '更新中...' : 'イベントを更新'}
           </button>
         </form>
+
+        {/* スコア削除ボタン */}
+        <button
+          type="button"
+          onClick={handleDeleteScores}
+          disabled={submitting}
+          className="w-full bg-orange-600 text-white py-3 rounded-lg font-bold text-base disabled:opacity-50 mt-4 hover:bg-orange-700 active:bg-orange-700"
+        >
+          スコアを削除
+        </button>
 
         {/* 削除ボタン */}
         <button
