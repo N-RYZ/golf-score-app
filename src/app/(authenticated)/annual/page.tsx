@@ -182,7 +182,7 @@ export default function TourInfoPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {pointRankings.map((ranking) => (
+                        {[...pointRankings].sort((a, b) => a.current_handicap - b.current_handicap).map((ranking) => (
                           <tr key={ranking.player_id} className="border-b border-[#d6cabc] last:border-b-0">
                             <td className="px-4 py-3 font-medium text-[#1d3937]">{ranking.player_name}</td>
                             <td className="px-4 py-3 text-center text-[#91855a]">{ranking.initial_handicap.toFixed(1)}</td>

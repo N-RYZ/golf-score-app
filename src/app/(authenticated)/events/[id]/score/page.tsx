@@ -544,11 +544,15 @@ export default function ScoreInputPage() {
   // リーダーズボードモーダル（フローティングボタンから）
   const renderLeaderboardModal = () => {
     if (!showLeaderboard) return null;
+    const maxEnteredHole = Object.values(scores)
+      .filter(s => s.strokes > 0 && !s.isDefault)
+      .reduce((max, s) => Math.max(max, s.hole_number), 0);
+    const displayHole = maxEnteredHole || currentHole;
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg shadow-xl w-full max-h-[85vh] flex flex-col">
           <div className="p-4 border-b border-gray-200 flex items-center justify-between shrink-0">
-            <h2 className="text-lg font-bold text-gray-900">リーダーズボード</h2>
+            <h2 className="text-lg font-bold text-gray-900">リーダーズボード（{displayHole}H時点）</h2>
             <button
               onClick={() => setShowLeaderboard(false)}
               className="text-gray-400 hover:text-gray-600 text-2xl leading-none w-8 h-8 flex items-center justify-center"
@@ -557,7 +561,7 @@ export default function ScoreInputPage() {
             </button>
           </div>
           <div className="overflow-auto p-4">
-            {renderRankingContent(currentHole)}
+            {renderRankingContent(displayHole)}
           </div>
         </div>
       </div>
