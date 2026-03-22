@@ -322,7 +322,12 @@ export default function EventDetailPage() {
                     <td className="px-1 py-1 text-center bg-[#d6cabc] text-[#1d3937]">
                       {holes.reduce((s, h) => s + h.par, 0)}
                     </td>
-                    <td className="bg-[#91855a]/20" />
+                    <td className="px-1 py-1 text-center font-bold bg-[#91855a]/20 text-[#91855a] whitespace-nowrap">
+                      {(() => {
+                        const total = participants.reduce((sum, p) => sum + calcPenalty(p.player_id), 0);
+                        return total > 0 ? `${total}` : '-';
+                      })()}
+                    </td>
                   </tr>
                 </thead>
                 <tbody>
