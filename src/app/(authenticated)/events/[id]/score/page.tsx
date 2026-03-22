@@ -861,14 +861,14 @@ export default function ScoreInputPage() {
           <button
             onClick={() => setShowScoreList(true)}
             className="flex-1 flex flex-col items-center justify-center font-bold text-white active:opacity-70"
-            style={{ backgroundColor: '#556b4e', fontSize: 'min(20px, 5vw)' }}
+            style={{ backgroundColor: '#C49A2D', fontSize: 'min(20px, 5vw)' }}
           >
             一覧
           </button>
           <button
             onClick={() => { setLeaderboardTab('gross'); setShowLeaderboard(true); }}
             className="flex-1 flex flex-col items-center justify-center font-bold text-white active:opacity-70"
-            style={{ backgroundColor: '#1d3937', fontSize: 'min(20px, 5vw)' }}
+            style={{ backgroundColor: '#A65236', fontSize: 'min(20px, 5vw)' }}
           >
             順位
           </button>
