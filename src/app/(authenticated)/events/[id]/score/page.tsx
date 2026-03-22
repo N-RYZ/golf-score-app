@@ -567,13 +567,13 @@ export default function ScoreInputPage() {
   // スコア一覧モーダル（いつでも表示可能）
   const renderScoreListModal = () => {
     if (!showScoreList) return null;
-    const displayHoles = Array.from({ length: currentHole }, (_, i) => i + 1);
+    const displayHoles = Array.from({ length: 18 }, (_, i) => i + 1);
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-auto">
           <div className="p-4 border-b border-gray-200 sticky top-0 bg-white flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">スコア一覧（1H〜{currentHole}H）</h2>
+            <h2 className="text-lg font-bold text-gray-900">スコア一覧</h2>
             <button
               onClick={() => setShowScoreList(false)}
               className="text-gray-400 hover:text-gray-600 text-2xl leading-none w-8 h-8 flex items-center justify-center"
@@ -647,7 +647,7 @@ export default function ScoreInputPage() {
                     合計
                   </td>
                   {groupMembers.map((member) => {
-                    const total = calculateTotal(member.player_id, 1, currentHole);
+                    const total = calculateTotal(member.player_id, 1, 18);
                     return (
                       <td key={member.player_id} className="border-2 border-green-700 px-3 py-3 text-center">
                         <div className="text-2xl font-bold text-green-900">{total.strokes || '-'}</div>
