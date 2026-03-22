@@ -67,12 +67,15 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     const { id } = await params;
     const { name, event_date, course_id, event_type, status, participants, groups } = await req.json();
 
+    // event_type を DB許容値にマッピング（'1'→'regular', '2'→'major', '3'→'final'）
+    const EVENT_TYPE_MAP: Record<string, string> = { '1': 'regular', '2': 'major', '3': 'final' };
+
     // 基本情報の更新
     const updates: Record<string, string> = {};
     if (name) updates.name = name;
     if (event_date) updates.event_date = event_date;
     if (course_id) updates.course_id = course_id;
-    if (event_type) updates.event_type = event_type;
+    if (event_type) updates.event_type = EVENT_TYPE_MAP[event_type] || event_type;
     if (status) updates.status = status;
 
     if (Object.keys(updates).length > 0) {

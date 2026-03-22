@@ -46,7 +46,8 @@ export default function EditEventPage() {
       setEventName(ev.name);
       setEventDate(ev.event_date);
       setCourseId(ev.courses?.id || '');
-      setEventType(ev.event_type || '1');
+      const typeNorm: Record<string, string> = { regular: '1', major: '2', final: '3' };
+      setEventType(typeNorm[ev.event_type] || ev.event_type || '1');
       setSelectedParticipants(
         ev.event_participants?.map((p: { player_id: string }) => p.player_id) || []
       );
