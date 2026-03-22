@@ -46,6 +46,11 @@ export default function ScoreInputPage() {
   const [isOnline, setIsOnline] = useState(true);
   const [showAttest, setShowAttest] = useState(false);
   const [attestType, setAttestType] = useState<'front' | 'full' | null>(null);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [leaderboardTab, setLeaderboardTab] = useState<'gross' | 'net'>('gross');
+  const [attestTab, setAttestTab] = useState<'scores' | 'ranking'>('scores');
+  const [handicaps, setHandicaps] = useState<Record<string, number>>({});
+  const [showScoreList, setShowScoreList] = useState(false);
 
   const prevHoleRef = useRef<number>(1);
 
@@ -78,6 +83,17 @@ export default function ScoreInputPage() {
       if (!res.ok) return;
       const data: EventInfo = await res.json();
       setEvent(data);
+
+      // ハンデ取得
+      const year = new Date(data.event_date).getFullYear();
+      fetch(`/api/admin/players?year=${year}`)
+        .then(r => r.ok ? r.json() : [])
+        .then((players: { id: string; current_handicap: number | null }[]) => {
+          const hcMap: Record<string, number> = {};
+          players.forEach(p => { hcMap[p.id] = p.current_handicap ?? 0; });
+          setHandicaps(hcMap);
+        })
+        .catch(() => {});
 
       // サーバーのスコアをローカルに反映
       const scoreMap: Record<string, ScoreData> = {};
@@ -328,6 +344,7 @@ export default function ScoreInputPage() {
       if (currentHole === 9 && newHole === 10) {
         setAttestType('front');
         setShowAttest(true);
+        setAttestTab('scores');
         return;
       }
 
@@ -335,6 +352,7 @@ export default function ScoreInputPage() {
       if (currentHole === 18 && newHole === 19) {
         setAttestType('full');
         setShowAttest(true);
+        setAttestTab('scores');
         return;
       }
 
@@ -388,6 +406,36 @@ export default function ScoreInputPage() {
     return { strokes: totalStrokes, putts: totalPutts };
   };
 
+  // リーダーズボード計算（全参加者・指定ホールまで）
+  const calculateLeaderboard = useCallback((maxHole: number) => {
+    if (!event) return [];
+    return event.event_participants.map(p => {
+      let gross = 0;
+      let holesPlayed = 0;
+      let latestHole = 0;
+      for (let h = 1; h <= maxHole; h++) {
+        const s = scores[scoreKey(p.player_id, h)];
+        if (s) {
+          latestHole = h;
+          if (s.strokes > 0 && !s.isDefault) {
+            gross += s.strokes;
+            holesPlayed++;
+          }
+        }
+      }
+      const hc = handicaps[p.player_id] ?? 0;
+      return {
+        player_id: p.player_id,
+        name: p.players.name,
+        gross,
+        net: gross > 0 ? gross - hc : 0,
+        hc,
+        holesPlayed,
+        latestHole,
+      };
+    }).filter(r => r.holesPlayed > 0);
+  }, [event, scores, handicaps]);
+
   // スコア値の更新
   const updateScore = (field: 'strokes' | 'putts', delta: number) => {
     if (!selectedUserId) return;
@@ -436,6 +484,194 @@ export default function ScoreInputPage() {
   };
 
   const diff = currentScore.strokes > 0 ? currentScore.strokes - currentPar : 0;
+
+  // ランキングテーブル描画（グロス/ネット切り替え対応）
+  const renderRankingContent = (maxHole: number) => {
+    const board = calculateLeaderboard(maxHole);
+    const sorted = [...board].sort((a, b) =>
+      leaderboardTab === 'gross' ? a.gross - b.gross : a.net - b.net
+    );
+    return (
+      <div>
+        <div className="flex border-b border-gray-200 mb-1">
+          {(['gross', 'net'] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setLeaderboardTab(t)}
+              className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
+                leaderboardTab === t ? 'border-[#22393c] text-[#22393c]' : 'border-transparent text-gray-500'
+              }`}
+            >
+              {t === 'gross' ? 'グロス' : 'ネット'}
+            </button>
+          ))}
+        </div>
+        {sorted.length === 0 ? (
+          <p className="text-center text-gray-500 py-8 text-sm">スコアデータがありません</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="px-2 py-2 text-center text-gray-700 w-10">#</th>
+                <th className="px-2 py-2 text-left text-gray-700">名前</th>
+                <th className="px-2 py-2 text-center text-gray-500">H</th>
+                <th className={`px-2 py-2 text-center ${leaderboardTab === 'gross' ? 'text-[#22393c] font-bold' : 'text-gray-700'}`}>グロス</th>
+                <th className="px-2 py-2 text-center text-gray-500 text-xs">HC</th>
+                <th className={`px-2 py-2 text-center ${leaderboardTab === 'net' ? 'text-[#22393c] font-bold' : 'text-gray-700'}`}>ネット</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((r, idx) => {
+                const holeLabel = r.holesPlayed >= 18 ? 'F' : `${r.latestHole}`;
+                return (
+                  <tr key={r.player_id} className={`border-t border-gray-200 ${idx === 0 ? 'bg-yellow-50' : idx === 1 ? 'bg-gray-50' : ''}`}>
+                    <td className="px-2 py-2 text-center font-bold text-gray-500">{idx + 1}</td>
+                    <td className="px-2 py-2 font-medium text-gray-900 whitespace-nowrap">{r.name}</td>
+                    <td className={`px-2 py-2 text-center text-xs font-bold ${r.holesPlayed >= 18 ? 'text-green-700' : 'text-gray-400'}`}>{holeLabel}</td>
+                    <td className={`px-2 py-2 text-center font-bold ${leaderboardTab === 'gross' ? 'text-[#22393c]' : 'text-gray-600'}`}>{r.gross}</td>
+                    <td className="px-2 py-2 text-center text-gray-400 text-xs">{r.hc}</td>
+                    <td className={`px-2 py-2 text-center font-bold ${leaderboardTab === 'net' ? 'text-[#22393c]' : 'text-gray-600'}`}>{r.net}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    );
+  };
+
+  // リーダーズボードモーダル（フローティングボタンから）
+  const renderLeaderboardModal = () => {
+    if (!showLeaderboard) return null;
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl w-full max-h-[85vh] flex flex-col">
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between shrink-0">
+            <h2 className="text-lg font-bold text-gray-900">リーダーズボード</h2>
+            <button
+              onClick={() => setShowLeaderboard(false)}
+              className="text-gray-400 hover:text-gray-600 text-2xl leading-none w-8 h-8 flex items-center justify-center"
+            >
+              ×
+            </button>
+          </div>
+          <div className="overflow-auto p-4">
+            {renderRankingContent(currentHole)}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // スコア一覧モーダル（いつでも表示可能）
+  const renderScoreListModal = () => {
+    if (!showScoreList) return null;
+    const displayHoles = Array.from({ length: currentHole }, (_, i) => i + 1);
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-auto">
+          <div className="p-4 border-b border-gray-200 sticky top-0 bg-white flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">スコア一覧（1H〜{currentHole}H）</h2>
+            <button
+              onClick={() => setShowScoreList(false)}
+              className="text-gray-400 hover:text-gray-600 text-2xl leading-none w-8 h-8 flex items-center justify-center"
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-300 px-3 py-2 text-center font-bold text-gray-900 sticky left-0 bg-gray-100 z-10">
+                    ホール
+                  </th>
+                  {groupMembers.map((member) => (
+                    <th key={member.player_id} className="border border-gray-300 px-3 py-2 text-center font-bold text-gray-900 min-w-[100px]">
+                      {member.players.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {displayHoles.map((h) => {
+                  const holePar = holes.find((hole) => hole.hole_number === h)?.par || 4;
+                  return (
+                    <tr key={h} className={h === currentHole ? 'bg-yellow-50' : 'hover:bg-gray-50'}>
+                      <td className="border border-gray-300 px-3 py-2 text-center font-bold text-gray-900 bg-gray-50 sticky left-0 z-10">
+                        <button
+                          onClick={() => { setShowScoreList(false); setCurrentHole(h); }}
+                          className="text-green-700 hover:text-green-900 hover:underline"
+                        >
+                          {h}H
+                        </button>
+                        <div className="text-xs text-gray-600 font-normal">PAR {holePar}</div>
+                      </td>
+                      {groupMembers.map((member) => {
+                        const score = scores[scoreKey(member.player_id, h)];
+                        const strokeVal = score?.strokes || 0;
+                        const puttVal = score?.putts || 0;
+                        const diffVal = strokeVal - holePar;
+                        let bgColor = 'bg-white';
+                        let textColor = 'text-gray-900';
+                        if (strokeVal > 0) {
+                          if (diffVal <= -1) { bgColor = 'bg-blue-50'; textColor = 'text-blue-900'; }
+                          else if (diffVal === 1) { bgColor = 'bg-orange-50'; textColor = 'text-orange-900'; }
+                          else if (diffVal >= 2) { bgColor = 'bg-red-50'; textColor = 'text-red-900'; }
+                        }
+                        return (
+                          <td
+                            key={member.player_id}
+                            onClick={() => { setShowScoreList(false); setSelectedUserId(member.player_id); setCurrentHole(h); }}
+                            className={`border border-gray-300 px-3 py-2 text-center cursor-pointer ${bgColor} hover:ring-2 hover:ring-inset hover:ring-green-600`}
+                          >
+                            <div className={`text-2xl font-bold ${textColor}`}>
+                              {strokeVal > 0 ? `${strokeVal} (${puttVal})` : '-'}
+                            </div>
+                            {strokeVal > 0 && diffVal !== 0 && (
+                              <div className={`text-xs font-semibold ${textColor} mt-1`}>
+                                ({diffVal > 0 ? '+' : ''}{diffVal})
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+                <tr className="bg-green-50 font-bold">
+                  <td className="border-2 border-green-700 px-3 py-3 text-center text-green-900 sticky left-0 bg-green-50 z-10">
+                    合計
+                  </td>
+                  {groupMembers.map((member) => {
+                    const total = calculateTotal(member.player_id, 1, currentHole);
+                    return (
+                      <td key={member.player_id} className="border-2 border-green-700 px-3 py-3 text-center">
+                        <div className="text-2xl font-bold text-green-900">{total.strokes || '-'}</div>
+                        <div className="text-xs text-gray-600 mt-1">P: {total.putts || '-'}</div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="p-4 border-t border-gray-200 sticky bottom-0 bg-white">
+            <button
+              onClick={() => setShowScoreList(false)}
+              className="w-full py-3 px-4 bg-gray-600 text-white font-bold rounded hover:bg-gray-700 active:bg-gray-700"
+            >
+              閉じる
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // アテストモーダルの表示内容
   const renderAttestModal = () => {
@@ -583,41 +819,60 @@ export default function ScoreInputPage() {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-[#cecdb9] select-none">
-      {/* 1. メンバー選択（2行×2列） */}
-      <div className="flex-[2] grid grid-cols-2 gap-px" style={{ backgroundColor: '#b0a898' }}>
-        {Array.from({ length: 4 }).map((_, i) => {
-          const p = groupMembers[i];
-          if (!p) {
+      {/* 1. メンバー選択（2行×2列）＋右サイドパネル */}
+      <div className="flex-[2] flex gap-px" style={{ backgroundColor: '#b0a898' }}>
+        <div className="flex-1 grid grid-cols-2 gap-px">
+          {Array.from({ length: 4 }).map((_, i) => {
+            const p = groupMembers[i];
+            if (!p) {
+              return (
+                <div
+                  key={`empty-${i}`}
+                  style={{ backgroundColor: '#d6cabc' }}
+                />
+              );
+            }
+            const memberScore = scores[scoreKey(p.player_id, currentHole)];
             return (
-              <div
-                key={`empty-${i}`}
-                style={{ backgroundColor: '#d6cabc' }}
-              />
+              <button
+                key={p.player_id}
+                onClick={() => handleMemberSwitch(p.player_id)}
+                className="pt-3 pb-5 pl-3 font-bold transition-colors relative overflow-hidden flex items-start justify-start text-white"
+                style={{
+                  fontSize: 'min(28px, 6.5vw)',
+                  backgroundColor: selectedUserId === p.player_id ? '#1d3937' : '#d6cabc',
+                }}
+              >
+                {memberScore && !memberScore.isDefault && (
+                  <span
+                    className="absolute bottom-1 right-2 font-black leading-none pointer-events-none"
+                    style={{ fontSize: 'min(42px, 10vw)', opacity: selectedUserId === p.player_id ? 0.35 : 0.7, color: '#ffffff' }}
+                  >
+                    {memberScore.strokes}({memberScore.putts})
+                  </span>
+                )}
+                <span className="relative z-10">{p.players.name}</span>
+              </button>
             );
-          }
-          const memberScore = scores[scoreKey(p.player_id, currentHole)];
-          return (
-            <button
-              key={p.player_id}
-              onClick={() => handleMemberSwitch(p.player_id)}
-              className="pt-3 pb-5 pl-3 font-bold transition-colors relative overflow-hidden flex items-start justify-start text-white"
-              style={{
-                fontSize: 'min(28px, 6.5vw)',
-                backgroundColor: selectedUserId === p.player_id ? '#1d3937' : '#d6cabc',
-              }}
-            >
-              {memberScore && !memberScore.isDefault && (
-                <span
-                  className="absolute bottom-1 right-2 font-black leading-none pointer-events-none"
-                  style={{ fontSize: 'min(42px, 10vw)', opacity: selectedUserId === p.player_id ? 0.35 : 0.7, color: '#ffffff' }}
-                >
-                  {memberScore.strokes}({memberScore.putts})
-                </span>
-              )}
-              <span className="relative z-10">{p.players.name}</span>
-            </button>
-          );
-        })}
+          })}
+        </div>
+        {/* 右サイドパネル：一覧・順位 */}
+        <div className="flex flex-col gap-px" style={{ width: 'min(112px, 28vw)' }}>
+          <button
+            onClick={() => setShowScoreList(true)}
+            className="flex-1 flex flex-col items-center justify-center font-bold text-white active:opacity-70"
+            style={{ backgroundColor: '#556b4e', fontSize: 'min(20px, 5vw)' }}
+          >
+            一覧
+          </button>
+          <button
+            onClick={() => { setLeaderboardTab('gross'); setShowLeaderboard(true); }}
+            className="flex-1 flex flex-col items-center justify-center font-bold text-white active:opacity-70"
+            style={{ backgroundColor: '#1d3937', fontSize: 'min(20px, 5vw)' }}
+          >
+            順位
+          </button>
+        </div>
       </div>
 
       {/* 2. 打数エリア */}
@@ -725,6 +980,13 @@ export default function ScoreInputPage() {
           </svg>
         </button>
       </div>
+
+
+{/* スコア一覧モーダル */}
+      {renderScoreListModal()}
+
+      {/* リーダーズボードモーダル */}
+      {renderLeaderboardModal()}
 
       {/* アテストモーダル */}
       {renderAttestModal()}
