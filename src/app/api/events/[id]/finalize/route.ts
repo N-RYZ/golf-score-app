@@ -13,11 +13,14 @@ type EventResultItem = {
   under_par_strokes?: number;
 };
 
-// ポイントテーブル
+// ポイントテーブル（旧スキーマ値も対応）
 const POINTS_TABLE: Record<string, Record<number, number>> = {
   '1': { 1: 16, 2: 8, 3: 4, 4: 2, 5: 1 },
+  'regular': { 1: 16, 2: 8, 3: 4, 4: 2, 5: 1 },
   '2': { 1: 21, 2: 12, 3: 7, 4: 4, 5: 2 },
-  '3': { 1: 26, 2: 16, 3: 10, 4: 6, 5: 3 }
+  'major': { 1: 21, 2: 12, 3: 7, 4: 4, 5: 2 },
+  '3': { 1: 26, 2: 16, 3: 10, 4: 6, 5: 3 },
+  'final': { 1: 26, 2: 16, 3: 10, 4: 6, 5: 3 },
 };
 
 // ハンデキャップ計算（基本ルール）
@@ -115,16 +118,17 @@ export async function POST(
       const grossScore = scores?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
 
       // 現在のハンデ取得
-      const { data: seasonStats, error: statsError } = await supabase
+      const eventYear = event.year || new Date(event.event_date).getFullYear();
+      const { data: seasonStats } = await supabase
         .from('player_season_stats')
         .select('current_handicap')
         .eq('player_id', playerId)
-        .eq('year', event.year)
+        .eq('year', eventYear)
         .single();
 
-      if (statsError || !seasonStats) continue;
+      // player_season_statsがない場合はハンデ0として処理
+      const currentHandicap = seasonStats?.current_handicap ?? 0;
 
-      const currentHandicap = seasonStats.current_handicap;
       const netScore = grossScore - currentHandicap;
 
       results.push({
@@ -134,6 +138,12 @@ export async function POST(
         handicap_before: currentHandicap
       });
     }
+
+    if (results.length === 0) {
+      return NextResponse.json({ error: 'スコアが登録されていないか、参加者のハンデ情報がありません' }, { status: 400 });
+    }
+
+    const eventYear = event.year || new Date(event.event_date).getFullYear();
 
     // ネットスコアで順位付け
     results.sort((a, b) => {
@@ -146,7 +156,8 @@ export async function POST(
     results.forEach((result, index) => {
       const rank = index + 1;
       result.rank = rank;
-      result.points = POINTS_TABLE[event.event_type || '1'][rank] || 0;
+      const pointsRow = POINTS_TABLE[event.event_type || '1'] ?? POINTS_TABLE['1'];
+      result.points = pointsRow[rank] || 0;
 
       // ハンデ更新計算（上位3位のみ）
       if (rank <= 3) {
@@ -192,7 +203,7 @@ export async function POST(
         .from('player_season_stats')
         .select('total_points, participation_count')
         .eq('player_id', result.player_id)
-        .eq('year', event.year)
+        .eq('year', eventYear)
         .single();
 
       // 更新
@@ -204,14 +215,14 @@ export async function POST(
           participation_count: (currentStats?.participation_count || 0) + 1
         })
         .eq('player_id', result.player_id)
-        .eq('year', event.year);
+        .eq('year', eventYear);
 
       // ハンデ履歴に記録
       if (result.handicap_before !== result.handicap_after) {
         await supabase.from('handicap_history').insert({
           player_id: result.player_id,
           event_id: eventId,
-          year: event.year,
+          year: eventYear,
           handicap_before: result.handicap_before,
           handicap_after: result.handicap_after,
           adjustment_reason: '期中更新'
@@ -232,8 +243,9 @@ export async function POST(
 
     return NextResponse.json({ success: true, results });
   } catch (error) {
-    console.error('Error finalizing event:', error);
-    return NextResponse.json({ error: 'サーバーエラー' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('Error finalizing event:', msg);
+    return NextResponse.json({ error: `サーバーエラー: ${msg}` }, { status: 500 });
   }
 }
 
