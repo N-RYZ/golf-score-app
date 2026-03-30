@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 type User = {
-  role: 'admin' | 'player';
+  role: 'admin' | 'player' | 'viewer';
 };
 
 type AuthContextType = {
@@ -11,6 +11,7 @@ type AuthContextType = {
   login: (pin: string) => Promise<boolean>;
   logout: () => void;
   loading: boolean;
+  isViewer: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -52,8 +53,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('golf-user');
   };
 
+  const isViewer = user?.role === 'viewer' ?? false;
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, isViewer }}>
       {children}
     </AuthContext.Provider>
   );

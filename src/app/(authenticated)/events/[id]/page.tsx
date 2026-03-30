@@ -236,12 +236,18 @@ export default function EventDetailPage() {
       {/* スコア入力ボタン */}
       {event.status !== 'completed' && (
         <div className="px-4 pt-3">
-          <Link
-            href={`/events/${eventId}/score/select-group`}
-            className="block w-full bg-gradient-to-r from-[#1d3937] to-[#195042] text-white text-center py-3 rounded-lg font-bold"
-          >
-            スコア入力
-          </Link>
+          {user?.role === 'viewer' ? (
+            <div className="block w-full bg-gray-400 text-white text-center py-3 rounded-lg font-bold opacity-50 cursor-not-allowed">
+              スコア閲覧のみ（編集不可）
+            </div>
+          ) : (
+            <Link
+              href={`/events/${eventId}/score/select-group`}
+              className="block w-full bg-gradient-to-r from-[#1d3937] to-[#195042] text-white text-center py-3 rounded-lg font-bold"
+            >
+              スコア入力
+            </Link>
+          )}
         </div>
       )}
 

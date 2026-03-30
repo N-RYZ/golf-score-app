@@ -35,6 +35,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ role: 'player' });
     }
 
+    // 0000は閲覧モード
+    if (pin === '0000') {
+      return NextResponse.json({ role: 'viewer' });
+    }
+
     return NextResponse.json(
       { error: 'PINが正しくありません' },
       { status: 401 }

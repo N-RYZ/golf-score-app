@@ -10,7 +10,7 @@ export default function AuthenticatedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
+  const { user, loading, isViewer } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -26,6 +26,13 @@ export default function AuthenticatedLayout({
     }
   }, [user, loading, router]);
 
+  // 閲覧モードユーザーは管理者ページへのアクセス不可
+  useEffect(() => {
+    if (!loading && isViewer && pathname.startsWith('/admin')) {
+      router.replace('/events');
+    }
+  }, [isViewer, loading, pathname, router]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -38,7 +45,14 @@ export default function AuthenticatedLayout({
 
   return (
     <div className={shouldShowFooter ? "min-h-screen pb-14" : "min-h-screen"}>
-      {children}
+      {isViewer && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white text-center text-xs font-bold py-1 pointer-events-none">
+          閲覧モード（データの更新はできません）
+        </div>
+      )}
+      <div className={isViewer ? "pt-6" : ""}>
+        {children}
+      </div>
       {shouldShowFooter && <FooterNav />}
     </div>
   );

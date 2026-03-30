@@ -2,6 +2,7 @@
 
 import { useParams, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useAuth } from '@/lib/auth-context';
 
 type CourseHole = { hole_number: number; par: number };
 type GroupMember = { player_id: string; players: { id: string; name: string } };
@@ -32,6 +33,7 @@ const LAST_POS_KEY = (eventId: string, groupId?: string | null) => `golf-lastpos
 const PENDING_KEY = (eventId: string) => `golf-pending-${eventId}`;
 
 export default function ScoreInputPage() {
+  const { isViewer } = useAuth();
   const params = useParams();
   const searchParams = useSearchParams();
   const eventId = params.id as string;
@@ -215,6 +217,7 @@ export default function ScoreInputPage() {
 
   // 未送信スコアの同期
   const syncPendingScores = useCallback(async () => {
+    if (isViewer) return;
     const pendingRaw = localStorage.getItem(PENDING_KEY(eventId));
     if (!pendingRaw) return;
 
@@ -239,6 +242,7 @@ export default function ScoreInputPage() {
   // スコア保存
   const saveScore = useCallback(
     async (userId: string, holeNumber: number, scoreData?: ScoreData) => {
+      if (isViewer) return;
       const key = scoreKey(userId, holeNumber);
       const score = scoreData || scores[key];
       if (!score || (score.strokes === 0 && score.putts === 0)) return;
@@ -438,7 +442,7 @@ export default function ScoreInputPage() {
 
   // スコア値の更新
   const updateScore = (field: 'strokes' | 'putts', delta: number) => {
-    if (!selectedUserId) return;
+    if (isViewer || !selectedUserId) return;
     const key = scoreKey(selectedUserId, currentHole);
     const holePar = event?.courses?.course_holes?.find((h) => h.hole_number === currentHole)?.par || 4;
     const current = scores[key] || {
@@ -883,7 +887,8 @@ export default function ScoreInputPage() {
       <div className="flex-[2] flex">
         <button
           onClick={() => updateScore('strokes', -1)}
-          className="flex-1 flex items-center justify-center active:opacity-70"
+          disabled={isViewer}
+          className="flex-1 flex items-center justify-center active:opacity-70 disabled:opacity-30"
           style={{ backgroundColor: '#195042' }}
         >
           <span className="text-[min(80px,20vw)] leading-none font-light text-white">
@@ -910,7 +915,8 @@ export default function ScoreInputPage() {
 
         <button
           onClick={() => updateScore('strokes', 1)}
-          className="flex-1 flex items-center justify-center active:opacity-80"
+          disabled={isViewer}
+          className="flex-1 flex items-center justify-center active:opacity-80 disabled:opacity-30"
           style={{ backgroundColor: '#195042' }}
         >
           <span className="text-[min(80px,20vw)] leading-none text-white font-bold">
@@ -923,7 +929,8 @@ export default function ScoreInputPage() {
       <div className="flex-[2] flex">
         <button
           onClick={() => updateScore('putts', -1)}
-          className="flex-1 flex items-center justify-center active:opacity-70"
+          disabled={isViewer}
+          className="flex-1 flex items-center justify-center active:opacity-70 disabled:opacity-30"
           style={{ backgroundColor: '#91855a' }}
         >
           <span className="text-[min(80px,20vw)] leading-none font-light" style={{ color: '#1d3937' }}>
@@ -943,7 +950,8 @@ export default function ScoreInputPage() {
 
         <button
           onClick={() => updateScore('putts', 1)}
-          className="flex-1 flex items-center justify-center active:opacity-80"
+          disabled={isViewer}
+          className="flex-1 flex items-center justify-center active:opacity-80 disabled:opacity-30"
           style={{ backgroundColor: '#91855a' }}
         >
           <span className="text-[min(80px,20vw)] leading-none font-bold" style={{ color: '#1d3937' }}>
