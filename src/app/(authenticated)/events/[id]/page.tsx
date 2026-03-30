@@ -233,13 +233,16 @@ export default function EventDetailPage() {
         </div>
       </header>
 
-      {/* スコア入力ボタン */}
+      {/* スコア入力/閲覧ボタン */}
       {event.status !== 'completed' && (
         <div className="px-4 pt-3">
           {user?.role === 'viewer' ? (
-            <div className="block w-full bg-gray-400 text-white text-center py-3 rounded-lg font-bold opacity-50 cursor-not-allowed">
-              スコア閲覧のみ（編集不可）
-            </div>
+            <Link
+              href={`/events/${eventId}/score/select-group`}
+              className="block w-full bg-[#91855a]/60 text-white text-center py-3 rounded-lg font-bold"
+            >
+              スコア閲覧（編集不可）
+            </Link>
           ) : (
             <Link
               href={`/events/${eventId}/score/select-group`}
