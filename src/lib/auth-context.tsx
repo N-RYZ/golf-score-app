@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('golf-user');
   };
 
-  const isViewer = user?.role === 'viewer' ?? false;
+  const isViewer = user?.role === 'viewer';
 
   return (
     <AuthContext.Provider value={{ user, login, logout, loading, isViewer }}>
