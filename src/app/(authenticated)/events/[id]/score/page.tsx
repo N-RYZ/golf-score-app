@@ -299,50 +299,55 @@ export default function ScoreInputPage() {
     (newUserId: string) => {
       if (!selectedUserId || selectedUserId === newUserId) return;
 
-      const key = scoreKey(selectedUserId, currentHole);
-      const prevScore = scores[key];
+      if (!isViewer) {
+        const key = scoreKey(selectedUserId, currentHole);
+        const prevScore = scores[key];
 
-      if (prevScore?.isDefault) {
-        // 何も入力せずに切替 → デフォルト値を確定スコアとして保存
-        const confirmedScore = { ...prevScore, isDefault: false };
-        const newScores = { ...scores, [key]: confirmedScore };
-        setScores(newScores);
-        localStorage.setItem(STORAGE_KEY(eventId), JSON.stringify(newScores));
-        saveScore(selectedUserId, currentHole, confirmedScore);
-      } else {
-        saveScore(selectedUserId, currentHole);
+        if (prevScore?.isDefault) {
+          // 何も入力せずに切替 → デフォルト値を確定スコアとして保存
+          const confirmedScore = { ...prevScore, isDefault: false };
+          const newScores = { ...scores, [key]: confirmedScore };
+          setScores(newScores);
+          localStorage.setItem(STORAGE_KEY(eventId), JSON.stringify(newScores));
+          saveScore(selectedUserId, currentHole, confirmedScore);
+        } else {
+          saveScore(selectedUserId, currentHole);
+        }
       }
 
       setSelectedUserId(newUserId);
     },
-    [selectedUserId, saveScore, currentHole, scores, eventId]
+    [isViewer, selectedUserId, saveScore, currentHole, scores, eventId]
   );
 
   const handleHoleChange = useCallback(
     (newHole: number) => {
-      // 現在のホールの全メンバーのスコアを保存（デフォルト値も確定スコアとして扱う）
       const members = getGroupMembers();
-      let updatedScores = { ...scores };
-      let hasConfirmed = false;
 
-      members.forEach((member) => {
-        const key = scoreKey(member.player_id, currentHole);
-        const memberScore = updatedScores[key];
-        if (memberScore?.isDefault) {
-          updatedScores[key] = { ...memberScore, isDefault: false };
-          hasConfirmed = true;
+      if (!isViewer) {
+        // 現在のホールの全メンバーのスコアを保存（デフォルト値も確定スコアとして扱う）
+        let updatedScores = { ...scores };
+        let hasConfirmed = false;
+
+        members.forEach((member) => {
+          const key = scoreKey(member.player_id, currentHole);
+          const memberScore = updatedScores[key];
+          if (memberScore?.isDefault) {
+            updatedScores[key] = { ...memberScore, isDefault: false };
+            hasConfirmed = true;
+          }
+        });
+
+        if (hasConfirmed) {
+          setScores(updatedScores);
+          localStorage.setItem(STORAGE_KEY(eventId), JSON.stringify(updatedScores));
         }
-      });
 
-      if (hasConfirmed) {
-        setScores(updatedScores);
-        localStorage.setItem(STORAGE_KEY(eventId), JSON.stringify(updatedScores));
+        members.forEach((member) => {
+          const key = scoreKey(member.player_id, currentHole);
+          saveScore(member.player_id, currentHole, updatedScores[key]);
+        });
       }
-
-      members.forEach((member) => {
-        const key = scoreKey(member.player_id, currentHole);
-        saveScore(member.player_id, currentHole, updatedScores[key]);
-      });
 
       // 9H終了後（10Hに進む前）にアテスト画面を表示
       if (currentHole === 9 && newHole === 10) {
@@ -371,7 +376,7 @@ export default function ScoreInputPage() {
         setSelectedUserId(members[0].player_id);
       }
     },
-    [saveScore, currentHole, getGroupMembers, scores, eventId]
+    [isViewer, saveScore, currentHole, getGroupMembers, scores, eventId]
   );
 
   // アテスト確認OK
