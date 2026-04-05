@@ -68,14 +68,27 @@ export default function EventDetailPage() {
 
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [results, setResults] = useState<EventResult[]>([]);
+  const [handicaps, setHandicaps] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [finalizing, setFinalizing] = useState(false);
   const [tab, setTab] = useState<Tab>('scores');
+  const [liveRankingTab, setLiveRankingTab] = useState<'gross' | 'net'>('gross');
 
   const fetchEvent = useCallback(async () => {
     const res = await fetch(`/api/events/${eventId}`);
     if (res.ok) {
-      setEvent(await res.json());
+      const data: EventDetail = await res.json();
+      setEvent(data);
+      // ハンデ取得
+      const year = new Date(data.event_date).getFullYear();
+      fetch(`/api/admin/players?year=${year}`)
+        .then(r => r.ok ? r.json() : [])
+        .then((players: { id: string; current_handicap: number | null }[]) => {
+          const hcMap: Record<string, number> = {};
+          players.forEach(p => { hcMap[p.id] = p.current_handicap ?? 0; });
+          setHandicaps(hcMap);
+        })
+        .catch(() => {});
     }
     setLoading(false);
   }, [eventId]);
@@ -137,18 +150,19 @@ export default function EventDetailPage() {
           holesPlayed++;
         }
       }
+      const hc = handicaps[p.player_id] ?? 0;
       return {
         player_id: p.player_id,
         name: p.players.name,
         gross,
+        hc,
+        net: gross > 0 ? gross - hc : 0,
         holesPlayed,
       };
     }).filter(r => r.holesPlayed > 0);
 
-    // グロスでソート
-    rankings.sort((a, b) => a.gross - b.gross);
     return rankings;
-  }, [event]);
+  }, [event, handicaps]);
 
   if (loading) {
     return (
@@ -233,24 +247,15 @@ export default function EventDetailPage() {
         </div>
       </header>
 
-      {/* スコア入力/閲覧ボタン */}
-      {event.status !== 'completed' && (
+      {/* スコア入力ボタン（viewer以外のみ） */}
+      {event.status !== 'completed' && user?.role !== 'viewer' && (
         <div className="px-4 pt-3">
-          {user?.role === 'viewer' ? (
-            <Link
-              href={`/events/${eventId}/score/select-group`}
-              className="block w-full bg-[#91855a]/60 text-white text-center py-3 rounded-lg font-bold"
-            >
-              スコア閲覧（編集不可）
-            </Link>
-          ) : (
-            <Link
-              href={`/events/${eventId}/score/select-group`}
-              className="block w-full bg-gradient-to-r from-[#1d3937] to-[#195042] text-white text-center py-3 rounded-lg font-bold"
-            >
-              スコア入力
-            </Link>
-          )}
+          <Link
+            href={`/events/${eventId}/score/select-group`}
+            className="block w-full bg-gradient-to-r from-[#1d3937] to-[#195042] text-white text-center py-3 rounded-lg font-bold"
+          >
+            スコア入力
+          </Link>
         </div>
       )}
 
@@ -499,35 +504,50 @@ export default function EventDetailPage() {
                 </div>
               </>
             ) : (
-              /* 未確定: ライブランキング（グロス順） */
+              /* 未確定: ライブランキング（グロス/ネット切替） */
               <>
                 {liveRanking.length === 0 ? (
                   <p className="text-[#91855a] text-sm">スコアデータがありません</p>
                 ) : (
                   <div className="bg-white rounded-lg shadow overflow-hidden">
-                    <div className="bg-[#d6cabc]/50 px-3 py-2 text-xs text-[#91855a] font-medium">
-                      グロススコア順（暫定）
+                    {/* グロス/ネット切替タブ */}
+                    <div className="flex border-b border-[#d6cabc]">
+                      {(['gross', 'net'] as const).map(t => (
+                        <button
+                          key={t}
+                          onClick={() => setLiveRankingTab(t)}
+                          className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
+                            liveRankingTab === t
+                              ? 'border-[#1d3937] text-[#1d3937]'
+                              : 'border-transparent text-[#91855a]'
+                          }`}
+                        >
+                          {t === 'gross' ? 'グロス順（暫定）' : 'ネット順（暫定）'}
+                        </button>
+                      ))}
                     </div>
                     <table className="w-full text-sm">
                       <thead className="bg-[#d6cabc]">
                         <tr>
                           <th className="px-3 py-2 text-center text-[#1d3937]">#</th>
                           <th className="px-3 py-2 text-left text-[#1d3937]">名前</th>
-                          <th className="px-3 py-2 text-center text-[#1d3937]">グロス</th>
-                          <th className="px-3 py-2 text-center text-[#1d3937]">ホール数</th>
+                          <th className={`px-3 py-2 text-center ${liveRankingTab === 'gross' ? 'text-[#1d3937] font-bold' : 'text-[#91855a]'}`}>グロス</th>
+                          <th className="px-3 py-2 text-center text-[#91855a]">HC</th>
+                          <th className={`px-3 py-2 text-center ${liveRankingTab === 'net' ? 'text-[#1d3937] font-bold' : 'text-[#91855a]'}`}>ネット</th>
+                          <th className="px-3 py-2 text-center text-[#91855a]">H数</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {liveRanking.map((r, idx) => (
-                          <tr key={r.player_id} className="border-t border-[#d6cabc]">
-                            <td className="px-3 py-3 text-center font-bold text-[#91855a]">
-                              {idx + 1}
-                            </td>
+                        {[...liveRanking]
+                          .sort((a, b) => liveRankingTab === 'gross' ? a.gross - b.gross : a.net - b.net)
+                          .map((r, idx) => (
+                          <tr key={r.player_id} className={`border-t border-[#d6cabc] ${idx === 0 ? 'bg-yellow-50' : ''}`}>
+                            <td className="px-3 py-3 text-center font-bold text-[#91855a]">{idx + 1}</td>
                             <td className="px-3 py-3 font-medium text-[#1d3937]">{r.name}</td>
-                            <td className="px-3 py-3 text-center font-bold text-[#1d3937]">{r.gross}</td>
-                            <td className="px-3 py-3 text-center text-[#91855a]">
-                              {r.holesPlayed}H
-                            </td>
+                            <td className={`px-3 py-3 text-center font-bold ${liveRankingTab === 'gross' ? 'text-[#1d3937]' : 'text-[#91855a]'}`}>{r.gross}</td>
+                            <td className="px-3 py-3 text-center text-[#91855a] text-xs">{r.hc}</td>
+                            <td className={`px-3 py-3 text-center font-bold ${liveRankingTab === 'net' ? 'text-[#195042]' : 'text-[#91855a]'}`}>{r.net}</td>
+                            <td className="px-3 py-3 text-center text-[#91855a] text-xs">{r.holesPlayed}H</td>
                           </tr>
                         ))}
                       </tbody>
