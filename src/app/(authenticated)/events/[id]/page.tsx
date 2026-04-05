@@ -522,7 +522,7 @@ export default function EventDetailPage() {
                               : 'border-transparent text-[#91855a]'
                           }`}
                         >
-                          {t === 'gross' ? 'グロス順（暫定）' : 'ネット順（暫定）'}
+                          {t === 'gross' ? 'グロス' : 'ネット'}
                         </button>
                       ))}
                     </div>

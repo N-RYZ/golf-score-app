@@ -24,13 +24,13 @@ async function buildEventCsv(eventId: string) {
   // 参加者
   const { data: participants } = await supabase
     .from('event_participants')
-    .select('user_id, users ( name )')
+    .select('player_id, players ( name )')
     .eq('event_id', eventId);
 
   // スコア
   const { data: scores } = await supabase
     .from('scores')
-    .select('user_id, hole_number, strokes, putts')
+    .select('player_id, hole_number, strokes, putts')
     .eq('event_id', eventId);
 
   const course = event.courses as unknown as { name: string; course_holes: { hole_number: number; par: number }[] } | null;
@@ -62,10 +62,10 @@ async function buildEventCsv(eventId: string) {
 
   // プレイヤーごとのデータ行
   for (const p of (participants || [])) {
-    const user = p.users as unknown as { name: string };
-    const row = [user.name];
+    const player = p.players as unknown as { name: string };
+    const row = [player.name];
 
-    const playerScores = (scores || []).filter((s) => s.user_id === p.user_id);
+    const playerScores = (scores || []).filter((s) => s.player_id === p.player_id);
     let outStrokes = 0, inStrokes = 0, outPutts = 0, inPutts = 0;
     let penalty = 0;
 
@@ -105,6 +105,7 @@ async function buildEventCsv(eventId: string) {
 
 // GET: イベント単位 or 期間一括CSV
 export async function GET(req: NextRequest) {
+  try {
   const eventId = req.nextUrl.searchParams.get('event_id');
   const startDate = req.nextUrl.searchParams.get('start_date');
   const endDate = req.nextUrl.searchParams.get('end_date');
@@ -116,10 +117,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'イベントが見つかりません' }, { status: 404 });
     }
 
+    const encodedFilename = encodeURIComponent(`${result.eventDate}_${result.eventName}.csv`);
     return new NextResponse(result.csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="${result.eventDate}_${result.eventName}.csv"`,
+        'Content-Disposition': `attachment; filename*=UTF-8''${encodedFilename}`,
       },
     });
   }
@@ -153,13 +155,18 @@ export async function GET(req: NextRequest) {
     }
 
     const csv = buildCsv(allRows);
+    const encodedBulkFilename = encodeURIComponent(`${startDate}_${endDate}_全イベント.csv`);
     return new NextResponse(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="${startDate}_${endDate}_全イベント.csv"`,
+        'Content-Disposition': `attachment; filename*=UTF-8''${encodedBulkFilename}`,
       },
     });
   }
 
   return NextResponse.json({ error: 'event_id または start_date/end_date を指定してください' }, { status: 400 });
+  } catch (e) {
+    console.error('CSV route error:', e);
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
 }

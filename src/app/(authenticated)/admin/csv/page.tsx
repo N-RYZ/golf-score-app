@@ -45,12 +45,18 @@ export default function CsvPage() {
     setDownloading(eventId);
     try {
       const res = await fetch(`/api/admin/csv?event_id=${eventId}`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        alert(`エラー: ${err.error || res.status}`);
+        return;
+      }
 
       const blob = await res.blob();
       const disposition = res.headers.get('Content-Disposition') || '';
-      const match = disposition.match(/filename="(.+)"/);
-      const filename = match ? match[1] : 'scores.csv';
+      const rfc5987 = disposition.match(/filename\*=UTF-8''(.+)/);
+      const legacy = disposition.match(/filename="(.+)"/);
+      const match = rfc5987 || legacy;
+      const filename = match ? decodeURIComponent(match[1]) : 'scores.csv';
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -69,13 +75,16 @@ export default function CsvPage() {
     try {
       const res = await fetch(`/api/admin/csv?start_date=${startDate}&end_date=${endDate}`);
       if (!res.ok) {
-        alert('該当期間のイベントがありません');
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        alert(`エラー: ${err.error || res.status}`);
         return;
       }
 
       const blob = await res.blob();
       const disposition = res.headers.get('Content-Disposition') || '';
-      const match = disposition.match(/filename="(.+)"/);
+      const rfc5987 = disposition.match(/filename\*=UTF-8''(.+)/);
+      const legacy = disposition.match(/filename="(.+)"/);
+      const match = rfc5987 || legacy;
       const filename = match ? match[1] : 'all_scores.csv';
 
       const url = URL.createObjectURL(blob);
