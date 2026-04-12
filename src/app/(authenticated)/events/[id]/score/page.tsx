@@ -486,7 +486,18 @@ export default function ScoreInputPage() {
   // リーダーズボード計算（全参加者・指定ホールまで）
   const calculateLeaderboard = useCallback((maxHole: number) => {
     if (!event) return [];
-    return event.event_participants.map(p => {
+    // event_participants と全組のメンバーをマージして重複除去
+    const seen = new Set<string>();
+    const allParticipants: Participant[] = [];
+    [...event.event_participants, ...event.event_groups.flatMap(g =>
+      g.group_members.map(m => ({ player_id: m.player_id, players: m.players }))
+    )].forEach(p => {
+      if (!seen.has(p.player_id)) {
+        seen.add(p.player_id);
+        allParticipants.push(p);
+      }
+    });
+    return allParticipants.map(p => {
       let gross = 0;
       let holesPlayed = 0;
       let latestHole = 0;
