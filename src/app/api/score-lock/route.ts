@@ -45,13 +45,19 @@ export async function POST(req: NextRequest) {
 
     const now = new Date().toISOString();
 
-    // 既存ロック確認
-    const { data: existing } = await supabase
+    // 既存ロック確認（maybeSingle: 0行でもエラーにならない）
+    const { data: existing, error: selectError } = await supabase
       .from('score_locks')
       .select('device_id, heartbeat_at')
       .eq('event_id', event_id)
       .eq('group_id', group_id)
-      .single();
+      .maybeSingle();
+
+    // テーブル未作成などインフラエラー → ロック機能をスキップして通過
+    if (selectError) {
+      console.error('score_locks select error:', selectError.message);
+      return NextResponse.json({ success: true, skipped: true });
+    }
 
     if (existing) {
       const expired = isExpired(existing.heartbeat_at);
@@ -73,11 +79,15 @@ export async function POST(req: NextRequest) {
     }
 
     // 新規作成
-    const { error } = await supabase
+    const { error: insertError } = await supabase
       .from('score_locks')
       .insert({ event_id, group_id, device_id, locked_at: now, heartbeat_at: now });
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (insertError) {
+      console.error('score_locks insert error:', insertError.message);
+      // 挿入エラーはロックとして扱わず通過
+      return NextResponse.json({ success: true, skipped: true });
+    }
 
     return NextResponse.json({ success: true });
   } catch {
