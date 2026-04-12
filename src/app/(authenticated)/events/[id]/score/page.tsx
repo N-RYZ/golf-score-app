@@ -150,7 +150,8 @@ export default function ScoreInputPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ event_id: eventId, group_id: lockGroupId, device_id: deviceId, force }),
       });
-      return res.ok;
+      // 409のみ「他端末ロック中」として扱う。500等はエラーとして無視して通過
+      return res.status !== 409;
     } catch {
       return true; // ネットワークエラー時は通過
     }
