@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
 
@@ -31,25 +31,13 @@ type EventInfo = {
 const STORAGE_KEY = (eventId: string) => `golf-scores-${eventId}`;
 const LAST_POS_KEY = (eventId: string, groupId?: string | null) => `golf-lastpos-${eventId}-${groupId || 'all'}`;
 const PENDING_KEY = (eventId: string) => `golf-pending-${eventId}`;
-const DEVICE_ID_KEY = 'golf-device-id';
-
-function getDeviceId(): string {
-  let id = localStorage.getItem(DEVICE_ID_KEY);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(DEVICE_ID_KEY, id);
-  }
-  return id;
-}
 
 export default function ScoreInputPage() {
   const { isViewer } = useAuth();
   const params = useParams();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const eventId = params.id as string;
   const groupId = searchParams.get('group');
-  const lockGroupId = groupId || 'all';
 
   const [event, setEvent] = useState<EventInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,8 +48,6 @@ export default function ScoreInputPage() {
   const [isOnline, setIsOnline] = useState(true);
   const [showAttest, setShowAttest] = useState(false);
   const [attestType, setAttestType] = useState<'front' | 'full' | null>(null);
-  const [showLockConfirm, setShowLockConfirm] = useState(false);
-  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [leaderboardTab, setLeaderboardTab] = useState<'gross' | 'net'>('gross');
   const [attestTab, setAttestTab] = useState<'scores' | 'ranking'>('scores');
@@ -140,64 +126,10 @@ export default function ScoreInputPage() {
     setLoading(false);
   }, [eventId]);
 
-  // ロック取得（force=trueで強制上書き）
-  const acquireLock = useCallback(async (force = false): Promise<boolean> => {
-    if (isViewer) return true;
-    try {
-      const deviceId = getDeviceId();
-      const res = await fetch('/api/score-lock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event_id: eventId, group_id: lockGroupId, device_id: deviceId, force }),
-      });
-      // 409のみ「他端末ロック中」として扱う。500等はエラーとして無視して通過
-      return res.status !== 409;
-    } catch {
-      return true; // ネットワークエラー時は通過
-    }
-  }, [eventId, lockGroupId, isViewer]);
-
-  // ロック解放
-  const releaseLock = useCallback(() => {
-    if (isViewer) return;
-    const deviceId = localStorage.getItem(DEVICE_ID_KEY);
-    if (!deviceId) return;
-    // keepalive付きfetchでページ離脱時も送信
-    fetch(`/api/score-lock?event_id=${eventId}&group_id=${lockGroupId}&device_id=${deviceId}`, {
-      method: 'DELETE',
-      keepalive: true,
-    }).catch(() => {});
-  }, [eventId, lockGroupId, isViewer]);
-
-  // 初期化 + ロック取得
+  // 初期化
   useEffect(() => {
     fetchEvent();
-
-    if (!isViewer) {
-      acquireLock(false).then((ok) => {
-        if (!ok) {
-          setShowLockConfirm(true);
-        } else {
-          // ハートビート開始（30秒ごと）
-          heartbeatRef.current = setInterval(async () => {
-            const deviceId = localStorage.getItem(DEVICE_ID_KEY);
-            if (!deviceId) return;
-            await fetch('/api/score-lock', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ event_id: eventId, group_id: lockGroupId, device_id: deviceId }),
-            }).catch(() => {});
-          }, 30_000);
-        }
-      });
-    }
-
-    return () => {
-      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-      releaseLock();
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchEvent]);
 
   // 最後の位置を復元
   useEffect(() => {
@@ -546,53 +478,6 @@ export default function ScoreInputPage() {
     setScores(newScores);
     localStorage.setItem(STORAGE_KEY(eventId), JSON.stringify(newScores));
   };
-
-  // ロック確認ダイアログ
-  if (showLockConfirm) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900/80 p-6">
-        <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-6 h-6 text-orange-500 shrink-0">
-              <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
-            </svg>
-            <h2 className="text-lg font-bold text-gray-900">現在入力中です</h2>
-          </div>
-          <p className="text-gray-600 text-sm mb-6">
-            この組は現在別の端末でスコアを入力中です。<br />
-            引き継いで入力しますか？
-          </p>
-          <div className="flex flex-col gap-3">
-            <button
-              onClick={async () => {
-                setShowLockConfirm(false);
-                await acquireLock(true);
-                // ハートビート開始
-                heartbeatRef.current = setInterval(async () => {
-                  const deviceId = localStorage.getItem(DEVICE_ID_KEY);
-                  if (!deviceId) return;
-                  await fetch('/api/score-lock', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ event_id: eventId, group_id: lockGroupId, device_id: deviceId }),
-                  }).catch(() => {});
-                }, 30_000);
-              }}
-              className="w-full py-3 bg-[#22393c] text-white font-bold rounded-lg hover:bg-[#1a2c2e] active:bg-[#1a2c2e]"
-            >
-              引き継いで入力する
-            </button>
-            <button
-              onClick={() => router.back()}
-              className="w-full py-3 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200"
-            >
-              戻る
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (

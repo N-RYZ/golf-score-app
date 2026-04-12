@@ -21,7 +21,6 @@ export default function SelectGroupPage() {
 
   const [event, setEvent] = useState<EventInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [lockedGroups, setLockedGroups] = useState<Set<string>>(new Set());
 
   const fetchEvent = useCallback(async () => {
     try {
@@ -35,26 +34,9 @@ export default function SelectGroupPage() {
     setLoading(false);
   }, [eventId]);
 
-  const fetchLocks = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/score-lock?event_id=${eventId}`);
-      if (!res.ok) return;
-      const locks: { group_id: string }[] = await res.json();
-      setLockedGroups(new Set(locks.map((l) => l.group_id)));
-    } catch {
-      // ロック取得失敗時は無視
-    }
-  }, [eventId]);
-
   useEffect(() => {
     fetchEvent();
   }, [fetchEvent]);
-
-  useEffect(() => {
-    if (!isViewer) {
-      fetchLocks();
-    }
-  }, [fetchLocks, isViewer]);
 
   if (loading) {
     return (
@@ -97,45 +79,34 @@ export default function SelectGroupPage() {
             </button>
           </div>
         ) : (
-          groups.map((group) => {
-            const isLocked = !isViewer && lockedGroups.has(group.id);
-            return (
-              <button
-                key={group.id}
-                onClick={() => router.push(`/events/${eventId}/score?group=${group.id}`)}
-                className="h-[20vh] bg-white rounded-lg shadow-sm px-5 py-3 text-left hover:bg-[#d6cabc]/20 transition-colors flex flex-col justify-center shrink-0 relative"
-              >
-                {isLocked && (
-                  <span className="absolute top-3 right-3 flex items-center gap-1 bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
-                      <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
-                    </svg>
-                    入力中
+          groups.map((group) => (
+            <button
+              key={group.id}
+              onClick={() => router.push(`/events/${eventId}/score?group=${group.id}`)}
+              className="h-[20vh] bg-white rounded-lg shadow-sm px-5 py-3 text-left hover:bg-[#d6cabc]/20 transition-colors flex flex-col justify-center shrink-0"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-bold text-2xl text-[#1d3937]">
+                  第{group.group_number}組
+                </span>
+                {group.start_time && (
+                  <span className="text-2xl font-bold text-[#91855a]">
+                    {group.start_time.slice(0, 5)} START
                   </span>
                 )}
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold text-2xl text-[#1d3937]">
-                    第{group.group_number}組
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {group.group_members.map((m) => (
+                  <span
+                    key={m.player_id}
+                    className="py-2 bg-[#d6cabc] text-[#1d3937] rounded-lg text-xl font-medium text-center"
+                  >
+                    {m.players.name}
                   </span>
-                  {group.start_time && (
-                    <span className="text-2xl font-bold text-[#91855a]">
-                      {group.start_time.slice(0, 5)} START
-                    </span>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {group.group_members.map((m) => (
-                    <span
-                      key={m.player_id}
-                      className="py-2 bg-[#d6cabc] text-[#1d3937] rounded-lg text-xl font-medium text-center"
-                    >
-                      {m.players.name}
-                    </span>
-                  ))}
-                </div>
-              </button>
-            );
-          })
+                ))}
+              </div>
+            </button>
+          ))
         )}
       </div>
     </div>
