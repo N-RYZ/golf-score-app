@@ -6,7 +6,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from('courses')
     .select(`
-      id, name, created_at,
+      id, name, created_at, nine1_name, nine2_name, nine3_name,
       course_holes (id, hole_number, par)
     `)
     .order('created_at', { ascending: true });
@@ -28,7 +28,7 @@ export async function GET() {
 // コース新規登録（18ホールのパー情報含む）
 export async function POST(req: NextRequest) {
   try {
-    const { name, holes } = await req.json();
+    const { name, holes, nine1_name, nine2_name, nine3_name } = await req.json();
 
     if (!name) {
       return NextResponse.json({ error: 'コース名は必須です' }, { status: 400 });
@@ -44,7 +44,12 @@ export async function POST(req: NextRequest) {
     // コース作成
     const { data: course, error: courseError } = await supabase
       .from('courses')
-      .insert({ name })
+      .insert({
+        name,
+        nine1_name: nine1_name || 'OUT',
+        nine2_name: nine2_name || 'IN',
+        nine3_name: nine3_name || null,
+      })
       .select('id, name, created_at')
       .single();
 

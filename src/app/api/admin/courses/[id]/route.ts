@@ -3,16 +3,22 @@ import { supabase } from '@/lib/supabase';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-// コース更新（名前 + 18ホールのパー）
+// コース更新（名前 + ホールパー + ナイン名）
 export async function PUT(req: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const { name, holes } = await req.json();
+    const { name, holes, nine1_name, nine2_name, nine3_name } = await req.json();
 
-    if (name) {
+    const courseUpdates: Record<string, string | null> = {};
+    if (name) courseUpdates.name = name;
+    if (nine1_name !== undefined) courseUpdates.nine1_name = nine1_name || 'OUT';
+    if (nine2_name !== undefined) courseUpdates.nine2_name = nine2_name || 'IN';
+    courseUpdates.nine3_name = nine3_name || null;
+
+    if (Object.keys(courseUpdates).length > 0) {
       const { error } = await supabase
         .from('courses')
-        .update({ name })
+        .update(courseUpdates)
         .eq('id', id);
 
       if (error) {
@@ -26,22 +32,25 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       }
     }
 
-    if (holes && holes.length === 18) {
-      for (let i = 0; i < 18; i++) {
+    if (holes && (holes.length === 18 || holes.length === 27)) {
+      for (let i = 0; i < holes.length; i++) {
         const { error } = await supabase
           .from('course_holes')
           .upsert(
-            {
-              course_id: id,
-              hole_number: i + 1,
-              par: holes[i],
-            },
+            { course_id: id, hole_number: i + 1, par: holes[i] },
             { onConflict: 'course_id,hole_number' }
           );
-
         if (error) {
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
+      }
+      // 18ホールに戻した場合は19H以降を削除
+      if (holes.length <= 18) {
+        await supabase
+          .from('course_holes')
+          .delete()
+          .eq('course_id', id)
+          .gt('hole_number', 18);
       }
     }
 

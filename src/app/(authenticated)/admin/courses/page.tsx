@@ -14,11 +14,14 @@ type Course = {
   id: string;
   name: string;
   created_at: string;
+  nine1_name: string;
+  nine2_name: string;
+  nine3_name: string | null;
   course_holes: CourseHole[];
 };
 
 const DEFAULT_PARS_18 = [4, 4, 4, 4, 3, 4, 4, 3, 5, 4, 4, 4, 4, 3, 4, 4, 3, 5];
-const DEFAULT_PARS_EXT = [4, 4, 3, 4, 4, 3, 4, 4, 5]; // 19-27H デフォルト
+const DEFAULT_PARS_EXT = [4, 4, 3, 4, 4, 3, 4, 4, 5];
 
 export default function CoursesPage() {
   const { user } = useAuth();
@@ -28,8 +31,12 @@ export default function CoursesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formName, setFormName] = useState('');
+  const [formNine1Name, setFormNine1Name] = useState('OUT');
+  const [formNine2Name, setFormNine2Name] = useState('IN');
+  const [formNine3Name, setFormNine3Name] = useState('');
   const [formHoles, setFormHoles] = useState<number[]>([...DEFAULT_PARS_18]);
   const [is27hole, setIs27hole] = useState(false);
+  const [activeNineTab, setActiveNineTab] = useState<'out' | 'in' | 'ext'>('out');
   const [error, setError] = useState('');
 
   const fetchCourses = useCallback(async () => {
@@ -50,8 +57,12 @@ export default function CoursesPage() {
 
   const resetForm = () => {
     setFormName('');
+    setFormNine1Name('OUT');
+    setFormNine2Name('IN');
+    setFormNine3Name('');
     setFormHoles([...DEFAULT_PARS_18]);
     setIs27hole(false);
+    setActiveNineTab('out');
     setEditingId(null);
     setShowForm(false);
     setError('');
@@ -63,6 +74,7 @@ export default function CoursesPage() {
       setFormHoles((prev) => prev.length === 18 ? [...prev, ...DEFAULT_PARS_EXT] : prev);
     } else {
       setFormHoles((prev) => prev.slice(0, 18));
+      setFormNine3Name('');
     }
   };
 
@@ -86,7 +98,13 @@ export default function CoursesPage() {
     const res = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: formName, holes: formHoles }),
+      body: JSON.stringify({
+        name: formName,
+        holes: formHoles,
+        nine1_name: formNine1Name || 'OUT',
+        nine2_name: formNine2Name || 'IN',
+        nine3_name: is27hole ? (formNine3Name || 'EXT') : null,
+      }),
     });
 
     if (!res.ok) {
@@ -102,8 +120,12 @@ export default function CoursesPage() {
   const handleEdit = (course: Course) => {
     const pars = course.course_holes.map((h) => h.par);
     setFormName(course.name);
+    setFormNine1Name(course.nine1_name || 'OUT');
+    setFormNine2Name(course.nine2_name || 'IN');
+    setFormNine3Name(course.nine3_name || '');
     setFormHoles(pars);
     setIs27hole(pars.length >= 27);
+    setActiveNineTab('out');
     setEditingId(course.id);
     setShowForm(true);
     setError('');
@@ -172,95 +194,180 @@ export default function CoursesPage() {
               />
             </div>
 
-            {/* OUT (1-9) */}
+            {/* ナインタブ */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-bold text-[#1d3937]">OUT (1-9H)</span>
-                <span className="text-xs text-[#91855a]">合計: {outTotal(formHoles)}</span>
+              <div className="flex rounded overflow-hidden border border-[#d6cabc] mb-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveNineTab('out')}
+                  className={`flex-1 py-2 text-sm font-bold transition-colors ${
+                    activeNineTab === 'out'
+                      ? 'bg-gradient-to-r from-[#1d3937] to-[#195042] text-white'
+                      : 'bg-white text-[#91855a]'
+                  }`}
+                >
+                  OUT
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveNineTab('in')}
+                  className={`flex-1 py-2 text-sm font-bold transition-colors border-x border-[#d6cabc] ${
+                    activeNineTab === 'in'
+                      ? 'bg-gradient-to-r from-[#1d3937] to-[#195042] text-white'
+                      : 'bg-white text-[#91855a]'
+                  }`}
+                >
+                  IN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveNineTab('ext')}
+                  className={`flex-1 py-2 text-sm font-bold transition-colors ${
+                    activeNineTab === 'ext'
+                      ? 'bg-gradient-to-r from-[#1d3937] to-[#195042] text-white'
+                      : 'bg-white text-[#91855a]'
+                  }`}
+                >
+                  入力
+                </button>
               </div>
-              <div className="grid grid-cols-9 gap-1">
-                {formHoles.slice(0, 9).map((par, i) => (
-                  <div key={i} className="text-center">
-                    <div className="text-xs text-[#91855a] mb-1">{i + 1}H</div>
-                    <select
-                      value={par}
-                      onChange={(e) => setHolePar(i, Number(e.target.value))}
-                      className="w-full text-center border border-[#d6cabc] rounded py-1 text-sm text-[#1d3937]"
-                    >
-                      <option value={3}>3</option>
-                      <option value={4}>4</option>
-                      <option value={5}>5</option>
-                    </select>
+
+              {/* OUT タブ */}
+              {activeNineTab === 'out' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-[#91855a] mb-1">ナイン名</label>
+                    <input
+                      type="text"
+                      value={formNine1Name}
+                      onChange={(e) => setFormNine1Name(e.target.value)}
+                      className="w-full px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
+                      placeholder="OUT"
+                    />
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* IN (10-18) */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-bold text-[#1d3937]">IN (10-18H)</span>
-                <span className="text-xs text-[#91855a]">合計: {inTotal(formHoles)}</span>
-              </div>
-              <div className="grid grid-cols-9 gap-1">
-                {formHoles.slice(9, 18).map((par, i) => (
-                  <div key={i + 9} className="text-center">
-                    <div className="text-xs text-[#91855a] mb-1">{i + 10}H</div>
-                    <select
-                      value={par}
-                      onChange={(e) => setHolePar(i + 9, Number(e.target.value))}
-                      className="w-full text-center border border-[#d6cabc] rounded py-1 text-sm text-[#1d3937]"
-                    >
-                      <option value={3}>3</option>
-                      <option value={4}>4</option>
-                      <option value={5}>5</option>
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 27ホールトグル */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => toggleIs27hole(!is27hole)}
-                className={`px-3 py-1 rounded-md text-sm font-bold border transition-colors ${
-                  is27hole
-                    ? 'bg-gradient-to-r from-[#1d3937] to-[#195042] text-white border-[#1d3937]'
-                    : 'bg-white text-[#91855a] border-[#d6cabc]'
-                }`}
-              >
-                27ホール対応
-              </button>
-              <span className="text-xs text-[#91855a]">{is27hole ? '第3ナイン（19-27H）あり' : '18ホールのみ'}</span>
-            </div>
-
-            {/* EXT (19-27) */}
-            {is27hole && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-bold text-[#1d3937]">EXT (19-27H)</span>
-                  <span className="text-xs text-[#91855a]">合計: {extTotal(formHoles)}</span>
-                </div>
-                <div className="grid grid-cols-9 gap-1">
-                  {(formHoles.slice(18, 27).length > 0 ? formHoles.slice(18, 27) : DEFAULT_PARS_EXT).map((par, i) => (
-                    <div key={i + 18} className="text-center">
-                      <div className="text-xs text-[#91855a] mb-1">{i + 19}H</div>
-                      <select
-                        value={par}
-                        onChange={(e) => setHolePar(i + 18, Number(e.target.value))}
-                        className="w-full text-center border border-[#d6cabc] rounded py-1 text-sm text-[#1d3937]"
-                      >
-                        <option value={3}>3</option>
-                        <option value={4}>4</option>
-                        <option value={5}>5</option>
-                      </select>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-bold text-[#1d3937]">ホール 1-9</span>
+                      <span className="text-xs text-[#91855a]">合計: {outTotal(formHoles)}</span>
                     </div>
-                  ))}
+                    <div className="grid grid-cols-9 gap-1">
+                      {formHoles.slice(0, 9).map((par, i) => (
+                        <div key={i} className="text-center">
+                          <div className="text-xs text-[#91855a] mb-1">{i + 1}H</div>
+                          <select
+                            value={par}
+                            onChange={(e) => setHolePar(i, Number(e.target.value))}
+                            className="w-full text-center border border-[#d6cabc] rounded py-1 text-sm text-[#1d3937]"
+                          >
+                            <option value={3}>3</option>
+                            <option value={4}>4</option>
+                            <option value={5}>5</option>
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+
+              {/* IN タブ */}
+              {activeNineTab === 'in' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-[#91855a] mb-1">ナイン名</label>
+                    <input
+                      type="text"
+                      value={formNine2Name}
+                      onChange={(e) => setFormNine2Name(e.target.value)}
+                      className="w-full px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
+                      placeholder="IN"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-bold text-[#1d3937]">ホール 10-18</span>
+                      <span className="text-xs text-[#91855a]">合計: {inTotal(formHoles)}</span>
+                    </div>
+                    <div className="grid grid-cols-9 gap-1">
+                      {formHoles.slice(9, 18).map((par, i) => (
+                        <div key={i + 9} className="text-center">
+                          <div className="text-xs text-[#91855a] mb-1">{i + 10}H</div>
+                          <select
+                            value={par}
+                            onChange={(e) => setHolePar(i + 9, Number(e.target.value))}
+                            className="w-full text-center border border-[#d6cabc] rounded py-1 text-sm text-[#1d3937]"
+                          >
+                            <option value={3}>3</option>
+                            <option value={4}>4</option>
+                            <option value={5}>5</option>
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 入力タブ（第3ナイン） */}
+              {activeNineTab === 'ext' && (
+                <div className="space-y-3">
+                  {!is27hole ? (
+                    <div className="flex flex-col items-center py-6 gap-3">
+                      <p className="text-sm text-[#91855a]">第3ナインを追加する場合はボタンを押してください</p>
+                      <button
+                        type="button"
+                        onClick={() => toggleIs27hole(true)}
+                        className="px-4 py-2 bg-gradient-to-r from-[#1d3937] to-[#195042] text-white text-sm font-bold rounded-md"
+                      >
+                        + 第3ナインを追加
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-[#91855a] mb-1">ナイン名</label>
+                        <input
+                          type="text"
+                          value={formNine3Name}
+                          onChange={(e) => setFormNine3Name(e.target.value)}
+                          className="w-full px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
+                          placeholder="EXT"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-bold text-[#1d3937]">ホール 19-27</span>
+                          <span className="text-xs text-[#91855a]">合計: {extTotal(formHoles)}</span>
+                        </div>
+                        <div className="grid grid-cols-9 gap-1">
+                          {(formHoles.slice(18, 27).length > 0 ? formHoles.slice(18, 27) : DEFAULT_PARS_EXT).map((par, i) => (
+                            <div key={i + 18} className="text-center">
+                              <div className="text-xs text-[#91855a] mb-1">{i + 19}H</div>
+                              <select
+                                value={par}
+                                onChange={(e) => setHolePar(i + 18, Number(e.target.value))}
+                                className="w-full text-center border border-[#d6cabc] rounded py-1 text-sm text-[#1d3937]"
+                              >
+                                <option value={3}>3</option>
+                                <option value={4}>4</option>
+                                <option value={5}>5</option>
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleIs27hole(false)}
+                        className="text-[#91855a] text-sm underline"
+                      >
+                        第3ナインを削除
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div className="text-right text-sm text-[#91855a]">
               合計パー: {outTotal(formHoles) + inTotal(formHoles) + (is27hole ? extTotal(formHoles) : 0)}
@@ -313,7 +420,7 @@ export default function CoursesPage() {
                 {course.course_holes.length > 0 && (
                   <div className="text-xs text-[#91855a]">
                     <div className="flex gap-1 flex-wrap">
-                      <span className="font-bold">OUT:</span>
+                      <span className="font-bold">{course.nine1_name || 'OUT'}:</span>
                       {course.course_holes.slice(0, 9).map((h) => (
                         <span key={h.hole_number}>{h.par}</span>
                       ))}
@@ -322,7 +429,7 @@ export default function CoursesPage() {
                       </span>
                     </div>
                     <div className="flex gap-1 flex-wrap">
-                      <span className="font-bold">IN:</span>
+                      <span className="font-bold">{course.nine2_name || 'IN'}:</span>
                       {course.course_holes.slice(9, 18).map((h) => (
                         <span key={h.hole_number}>{h.par}</span>
                       ))}
@@ -332,7 +439,7 @@ export default function CoursesPage() {
                     </div>
                     {course.course_holes.length >= 27 && (
                       <div className="flex gap-1 flex-wrap">
-                        <span className="font-bold">EXT:</span>
+                        <span className="font-bold">{course.nine3_name || 'EXT'}:</span>
                         {course.course_holes.slice(18, 27).map((h) => (
                           <span key={h.hole_number}>{h.par}</span>
                         ))}
