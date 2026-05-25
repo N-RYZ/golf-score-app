@@ -34,9 +34,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'コース名は必須です' }, { status: 400 });
     }
 
-    if (!holes || holes.length !== 18) {
+    if (!holes || (holes.length !== 18 && holes.length !== 27)) {
       return NextResponse.json(
-        { error: '18ホール全てのパーを設定してください' },
+        { error: '18ホールまたは27ホールのパーを設定してください' },
         { status: 400 }
       );
     }

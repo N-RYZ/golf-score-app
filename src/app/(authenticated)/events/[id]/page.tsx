@@ -75,20 +75,30 @@ export default function EventDetailPage() {
   const [liveRankingTab, setLiveRankingTab] = useState<'gross' | 'net'>('gross');
 
   const fetchEvent = useCallback(async () => {
-    const res = await fetch(`/api/events/${eventId}`);
+    const currentYear = new Date().getFullYear();
+    const [res, playersRes] = await Promise.all([
+      fetch(`/api/events/${eventId}`),
+      fetch(`/api/admin/players?year=${currentYear}`)
+    ]);
     if (res.ok) {
       const data: EventDetail = await res.json();
       setEvent(data);
-      // ハンデ取得
-      const year = new Date(data.event_date).getFullYear();
-      fetch(`/api/admin/players?year=${year}`)
-        .then(r => r.ok ? r.json() : [])
-        .then((players: { id: string; current_handicap: number | null }[]) => {
-          const hcMap: Record<string, number> = {};
-          players.forEach(p => { hcMap[p.id] = p.current_handicap ?? 0; });
-          setHandicaps(hcMap);
-        })
-        .catch(() => {});
+      const eventYear = new Date(data.event_date).getFullYear();
+      if (eventYear === currentYear && playersRes.ok) {
+        const players: { id: string; current_handicap: number | null }[] = await playersRes.json();
+        const hcMap: Record<string, number> = {};
+        players.forEach(p => { hcMap[p.id] = p.current_handicap ?? 0; });
+        setHandicaps(hcMap);
+      } else if (eventYear !== currentYear) {
+        fetch(`/api/admin/players?year=${eventYear}`)
+          .then(r => r.ok ? r.json() : [])
+          .then((players: { id: string; current_handicap: number | null }[]) => {
+            const hcMap: Record<string, number> = {};
+            players.forEach(p => { hcMap[p.id] = p.current_handicap ?? 0; });
+            setHandicaps(hcMap);
+          })
+          .catch(() => {});
+      }
     }
     setLoading(false);
   }, [eventId]);

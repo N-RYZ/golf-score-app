@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 
 type GroupMember = { player_id: string; players: { id: string; name: string } };
-type EventGroup = { id: string; group_number: number; start_time: string; group_members: GroupMember[] };
+type EventGroup = { id: string; group_number: number; start_time: string; start_hole: number; group_members: GroupMember[] };
 type EventInfo = {
   id: string;
   name: string;
@@ -86,9 +86,20 @@ export default function SelectGroupPage() {
               className="h-[20vh] bg-white rounded-lg shadow-sm px-5 py-3 text-left hover:bg-[#d6cabc]/20 transition-colors flex flex-col justify-center shrink-0"
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="font-bold text-2xl text-[#1d3937]">
-                  第{group.group_number}組
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-2xl text-[#1d3937]">
+                    第{group.group_number}組
+                  </span>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                    (group.start_hole ?? 1) === 10
+                      ? 'bg-[#91855a] text-white'
+                      : (group.start_hole ?? 1) === 19
+                      ? 'bg-[#556b4e] text-white'
+                      : 'bg-[#1d3937] text-white'
+                  }`}>
+                    {(group.start_hole ?? 1) === 10 ? 'IN' : (group.start_hole ?? 1) === 19 ? 'EXT' : 'OUT'}
+                  </span>
+                </div>
                 {group.start_time && (
                   <span className="text-2xl font-bold text-[#91855a]">
                     {group.start_time.slice(0, 5)} START

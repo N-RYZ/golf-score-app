@@ -1,12 +1,12 @@
 'use client';
 
 import { useParams, useSearchParams } from 'next/navigation';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/lib/auth-context';
 
 type CourseHole = { hole_number: number; par: number };
 type GroupMember = { player_id: string; players: { id: string; name: string } };
-type EventGroup = { id: string; group_number: number; group_members: GroupMember[] };
+type EventGroup = { id: string; group_number: number; start_hole: number; group_members: GroupMember[] };
 type Participant = { player_id: string; players: { id: string; name: string } };
 type ScoreData = {
   event_id: string;
@@ -56,6 +56,37 @@ export default function ScoreInputPage() {
 
   const prevHoleRef = useRef<number>(1);
 
+  // このグループのスタートホール（1=OUTスタート, 10=INスタート）
+  const startHole = useMemo(() => {
+    if (!event || !groupId) return 1;
+    return event.event_groups.find((g) => g.id === groupId)?.start_hole ?? 1;
+  }, [event, groupId]);
+
+  // プレー順のホール配列（コースの全ホールを基準にスタートホールから18ホール分）
+  const holeSequence = useMemo(() => {
+    const allHoleNums = (event?.courses?.course_holes ?? [])
+      .map((h) => h.hole_number)
+      .sort((a, b) => a - b);
+
+    if (allHoleNums.length === 0) {
+      // コースデータなし: フォールバック（18ホール固定）
+      if (startHole === 1) return Array.from({ length: 18 }, (_, i) => i + 1);
+      return [
+        ...Array.from({ length: 9 }, (_, i) => i + 10),
+        ...Array.from({ length: 9 }, (_, i) => i + 1),
+      ];
+    }
+
+    const startIdx = allHoleNums.indexOf(startHole);
+    const effectiveStart = startIdx === -1 ? 0 : startIdx;
+    const totalHoles = allHoleNums.length;
+
+    // スタートホールから18ホール分を順に取得（巻き戻しあり）
+    return Array.from({ length: 18 }, (_, i) =>
+      allHoleNums[(effectiveStart + i) % totalHoles]
+    );
+  }, [startHole, event]);
+
   // スコアのキー
   const scoreKey = (userId: string, holeNumber: number) => `${userId}-${holeNumber}`;
 
@@ -81,21 +112,32 @@ export default function ScoreInputPage() {
   // イベントデータ取得
   const fetchEvent = useCallback(async () => {
     try {
-      const res = await fetch(`/api/events/${eventId}`);
+      const currentYear = new Date().getFullYear();
+      const [res, playersRes] = await Promise.all([
+        fetch(`/api/events/${eventId}`),
+        fetch(`/api/admin/players?year=${currentYear}`)
+      ]);
       if (!res.ok) return;
       const data: EventInfo = await res.json();
       setEvent(data);
 
       // ハンデ取得
-      const year = new Date(data.event_date).getFullYear();
-      fetch(`/api/admin/players?year=${year}`)
-        .then(r => r.ok ? r.json() : [])
-        .then((players: { id: string; current_handicap: number | null }[]) => {
-          const hcMap: Record<string, number> = {};
-          players.forEach(p => { hcMap[p.id] = p.current_handicap ?? 0; });
-          setHandicaps(hcMap);
-        })
-        .catch(() => {});
+      const eventYear = new Date(data.event_date).getFullYear();
+      if (eventYear === currentYear && playersRes.ok) {
+        const players: { id: string; current_handicap: number | null }[] = await playersRes.json();
+        const hcMap: Record<string, number> = {};
+        players.forEach(p => { hcMap[p.id] = p.current_handicap ?? 0; });
+        setHandicaps(hcMap);
+      } else if (eventYear !== currentYear) {
+        fetch(`/api/admin/players?year=${eventYear}`)
+          .then(r => r.ok ? r.json() : [])
+          .then((players: { id: string; current_handicap: number | null }[]) => {
+            const hcMap: Record<string, number> = {};
+            players.forEach(p => { hcMap[p.id] = p.current_handicap ?? 0; });
+            setHandicaps(hcMap);
+          })
+          .catch(() => {});
+      }
 
       // サーバーのスコアをローカルに反映
       const scoreMap: Record<string, ScoreData> = {};
@@ -149,9 +191,10 @@ export default function ScoreInputPage() {
         setSelectedUserId(members[0].player_id);
       }
     } else {
+      setCurrentHole(startHole);
       setSelectedUserId(members[0].player_id);
     }
-  }, [event, eventId, getGroupMembers]);
+  }, [event, eventId, getGroupMembers, startHole]);
 
   // 位置を記録
   useEffect(() => {
@@ -349,16 +392,16 @@ export default function ScoreInputPage() {
         });
       }
 
-      // 9H終了後（10Hに進む前）にアテスト画面を表示
-      if (currentHole === 9 && newHole === 10) {
+      // 前半終了（シーケンス9番目→10番目: OUT=9→10, IN=18→1）
+      if (currentHole === holeSequence[8] && newHole === holeSequence[9]) {
         setAttestType('front');
         setShowAttest(true);
         setAttestTab('scores');
         return;
       }
 
-      // 18H終了後にアテスト画面を表示
-      if (currentHole === 18 && newHole === 19) {
+      // 全体終了（最後のホールから sentinel -1）
+      if (currentHole === holeSequence[17] && newHole === -1) {
         setAttestType('full');
         setShowAttest(true);
         setAttestTab('scores');
@@ -366,7 +409,7 @@ export default function ScoreInputPage() {
       }
 
       // 範囲チェック
-      if (newHole < 1 || newHole > 18) return;
+      if (!holeSequence.includes(newHole)) return;
 
       prevHoleRef.current = newHole;
       setCurrentHole(newHole);
@@ -376,14 +419,14 @@ export default function ScoreInputPage() {
         setSelectedUserId(members[0].player_id);
       }
     },
-    [isViewer, saveScore, currentHole, getGroupMembers, scores, eventId]
+    [isViewer, saveScore, currentHole, getGroupMembers, scores, eventId, holeSequence]
   );
 
   // アテスト確認OK
   const handleAttestConfirm = () => {
     setShowAttest(false);
     if (attestType === 'front') {
-      setCurrentHole(10);
+      setCurrentHole(holeSequence[9]); // OUTスタート: 10, INスタート: 1
     } else if (attestType === 'full') {
       window.location.href = '/events';
     }
@@ -497,6 +540,7 @@ export default function ScoreInputPage() {
 
   const holes = event.courses?.course_holes?.sort((a, b) => a.hole_number - b.hole_number) || [];
   const currentPar = holes.find((h) => h.hole_number === currentHole)?.par || 4;
+  const currentHoleIdx = holeSequence.indexOf(currentHole);
   const groupMembers = getGroupMembers();
   const currentScore = scores[scoreKey(selectedUserId, currentHole)] || {
     strokes: currentPar,
@@ -591,7 +635,7 @@ export default function ScoreInputPage() {
   // スコア一覧モーダル（いつでも表示可能）
   const renderScoreListModal = () => {
     if (!showScoreList) return null;
-    const displayHoles = Array.from({ length: 18 }, (_, i) => i + 1);
+    const displayHoles = holeSequence;
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -702,7 +746,7 @@ export default function ScoreInputPage() {
     if (!showAttest || !attestType) return null;
 
     const isFront = attestType === 'front';
-    const displayHoles = isFront ? Array.from({ length: 9 }, (_, i) => i + 1) : Array.from({ length: 18 }, (_, i) => i + 1);
+    const displayHoles = isFront ? holeSequence.slice(0, 9) : holeSequence;
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -799,6 +843,8 @@ export default function ScoreInputPage() {
                       strokes: outTotal.strokes + inTotal.strokes,
                       putts: outTotal.putts + inTotal.putts
                     };
+                    // 前半アテスト: OUTスタートなら1-9合計、INスタートなら10-18合計
+                    const firstHalfTotal = startHole === 1 ? outTotal : inTotal;
 
                     return (
                       <td key={member.player_id} className="border-2 border-green-700 px-3 py-3 text-center">
@@ -815,10 +861,10 @@ export default function ScoreInputPage() {
                           </div>
                         )}
                         <div className="text-2xl font-bold text-green-900">
-                          {isFront ? (outTotal.strokes || '-') : (fullTotal.strokes || '-')}
+                          {isFront ? (firstHalfTotal.strokes || '-') : (fullTotal.strokes || '-')}
                         </div>
                         <div className="text-xs text-gray-600 mt-1">
-                          P: {isFront ? (outTotal.putts || '-') : (fullTotal.putts || '-')}
+                          P: {isFront ? (firstHalfTotal.putts || '-') : (fullTotal.putts || '-')}
                         </div>
                       </td>
                     );
@@ -979,8 +1025,8 @@ export default function ScoreInputPage() {
       {/* 4. ホール番号ナビ */}
       <div className="flex-1 flex">
         <button
-          onClick={() => handleHoleChange(currentHole - 1)}
-          disabled={currentHole <= 1}
+          onClick={() => currentHoleIdx > 0 && handleHoleChange(holeSequence[currentHoleIdx - 1])}
+          disabled={currentHoleIdx <= 0}
           className="flex-1 flex items-center justify-center disabled:opacity-25 active:opacity-60"
           style={{ backgroundColor: '#d6cabc' }}
         >
@@ -999,9 +1045,9 @@ export default function ScoreInputPage() {
         </div>
 
         <button
-          onClick={() => handleHoleChange(currentHole + 1)}
+          onClick={() => handleHoleChange(currentHoleIdx < 17 ? holeSequence[currentHoleIdx + 1] : -1)}
           className="flex-1 flex items-center justify-center active:opacity-60"
-          style={{ backgroundColor: '#d6cabc', color: '#1d3937', opacity: currentHole >= 18 ? 0.25 : 1 }}
+          style={{ backgroundColor: '#d6cabc', color: '#1d3937', opacity: currentHoleIdx >= 17 ? 0.25 : 1 }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-[70px] h-[70px] text-[#1d3937]">
             <path fillRule="evenodd" d="M16.28 11.47a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 01-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 011.06-1.06l7.5 7.5z" clipRule="evenodd" />

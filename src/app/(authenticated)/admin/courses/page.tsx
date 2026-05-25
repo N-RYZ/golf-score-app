@@ -17,7 +17,8 @@ type Course = {
   course_holes: CourseHole[];
 };
 
-const DEFAULT_PARS = [4, 4, 4, 4, 3, 4, 4, 3, 5, 4, 4, 4, 4, 3, 4, 4, 3, 5];
+const DEFAULT_PARS_18 = [4, 4, 4, 4, 3, 4, 4, 3, 5, 4, 4, 4, 4, 3, 4, 4, 3, 5];
+const DEFAULT_PARS_EXT = [4, 4, 3, 4, 4, 3, 4, 4, 5]; // 19-27H デフォルト
 
 export default function CoursesPage() {
   const { user } = useAuth();
@@ -27,7 +28,8 @@ export default function CoursesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formName, setFormName] = useState('');
-  const [formHoles, setFormHoles] = useState<number[]>([...DEFAULT_PARS]);
+  const [formHoles, setFormHoles] = useState<number[]>([...DEFAULT_PARS_18]);
+  const [is27hole, setIs27hole] = useState(false);
   const [error, setError] = useState('');
 
   const fetchCourses = useCallback(async () => {
@@ -48,10 +50,20 @@ export default function CoursesPage() {
 
   const resetForm = () => {
     setFormName('');
-    setFormHoles([...DEFAULT_PARS]);
+    setFormHoles([...DEFAULT_PARS_18]);
+    setIs27hole(false);
     setEditingId(null);
     setShowForm(false);
     setError('');
+  };
+
+  const toggleIs27hole = (enable: boolean) => {
+    setIs27hole(enable);
+    if (enable) {
+      setFormHoles((prev) => prev.length === 18 ? [...prev, ...DEFAULT_PARS_EXT] : prev);
+    } else {
+      setFormHoles((prev) => prev.slice(0, 18));
+    }
   };
 
   const setHolePar = (index: number, par: number) => {
@@ -88,8 +100,10 @@ export default function CoursesPage() {
   };
 
   const handleEdit = (course: Course) => {
+    const pars = course.course_holes.map((h) => h.par);
     setFormName(course.name);
-    setFormHoles(course.course_holes.map((h) => h.par));
+    setFormHoles(pars);
+    setIs27hole(pars.length >= 27);
     setEditingId(course.id);
     setShowForm(true);
     setError('');
@@ -109,6 +123,7 @@ export default function CoursesPage() {
 
   const outTotal = (holes: number[]) => holes.slice(0, 9).reduce((a, b) => a + b, 0);
   const inTotal = (holes: number[]) => holes.slice(9, 18).reduce((a, b) => a + b, 0);
+  const extTotal = (holes: number[]) => holes.slice(18, 27).reduce((a, b) => a + b, 0);
 
   if (user?.role !== 'admin') return null;
 
@@ -205,8 +220,50 @@ export default function CoursesPage() {
               </div>
             </div>
 
+            {/* 27ホールトグル */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => toggleIs27hole(!is27hole)}
+                className={`px-3 py-1 rounded-md text-sm font-bold border transition-colors ${
+                  is27hole
+                    ? 'bg-gradient-to-r from-[#1d3937] to-[#195042] text-white border-[#1d3937]'
+                    : 'bg-white text-[#91855a] border-[#d6cabc]'
+                }`}
+              >
+                27ホール対応
+              </button>
+              <span className="text-xs text-[#91855a]">{is27hole ? '第3ナイン（19-27H）あり' : '18ホールのみ'}</span>
+            </div>
+
+            {/* EXT (19-27) */}
+            {is27hole && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-[#1d3937]">EXT (19-27H)</span>
+                  <span className="text-xs text-[#91855a]">合計: {extTotal(formHoles)}</span>
+                </div>
+                <div className="grid grid-cols-9 gap-1">
+                  {(formHoles.slice(18, 27).length > 0 ? formHoles.slice(18, 27) : DEFAULT_PARS_EXT).map((par, i) => (
+                    <div key={i + 18} className="text-center">
+                      <div className="text-xs text-[#91855a] mb-1">{i + 19}H</div>
+                      <select
+                        value={par}
+                        onChange={(e) => setHolePar(i + 18, Number(e.target.value))}
+                        className="w-full text-center border border-[#d6cabc] rounded py-1 text-sm text-[#1d3937]"
+                      >
+                        <option value={3}>3</option>
+                        <option value={4}>4</option>
+                        <option value={5}>5</option>
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="text-right text-sm text-[#91855a]">
-              合計パー: {outTotal(formHoles) + inTotal(formHoles)}
+              合計パー: {outTotal(formHoles) + inTotal(formHoles) + (is27hole ? extTotal(formHoles) : 0)}
             </div>
 
             <div className="flex gap-2">
@@ -273,6 +330,17 @@ export default function CoursesPage() {
                         = {course.course_holes.slice(9, 18).reduce((a, h) => a + h.par, 0)}
                       </span>
                     </div>
+                    {course.course_holes.length >= 27 && (
+                      <div className="flex gap-1 flex-wrap">
+                        <span className="font-bold">EXT:</span>
+                        {course.course_holes.slice(18, 27).map((h) => (
+                          <span key={h.hole_number}>{h.par}</span>
+                        ))}
+                        <span className="ml-1 font-bold">
+                          = {course.course_holes.slice(18, 27).reduce((a, h) => a + h.par, 0)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

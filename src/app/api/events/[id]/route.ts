@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       event_participants ( id, player_id,
         players ( id, name )
       ),
-      event_groups ( id, group_number, start_time,
+      event_groups ( id, group_number, start_time, start_hole,
         group_members ( id, player_id,
           players ( id, name )
         )
@@ -130,6 +130,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
             event_id: id,
             group_number: group.group_number,
             start_time: group.start_time,
+            start_hole: group.start_hole ?? 1,
           })
           .select('id')
           .single();

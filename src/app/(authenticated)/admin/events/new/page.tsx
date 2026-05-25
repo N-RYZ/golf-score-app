@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 
 type Member = { id: string; name: string };
-type Course = { id: string; name: string };
+type Course = { id: string; name: string; course_holes: { hole_number: number }[] };
 type GroupDraft = {
   group_number: number;
   start_time: string;
+  start_hole: number;
   members: string[];
 };
 
@@ -63,6 +64,7 @@ export default function NewEventPage() {
         {
           group_number: prev.length + 1,
           start_time: nextTime,
+          start_hole: 1,
           members: [],
         },
       ];
@@ -78,6 +80,10 @@ export default function NewEventPage() {
 
   const updateGroupTime = (index: number, time: string) => {
     setGroups((prev) => prev.map((g, i) => (i === index ? { ...g, start_time: time } : g)));
+  };
+
+  const updateGroupStartHole = (index: number, startHole: number) => {
+    setGroups((prev) => prev.map((g, i) => (i === index ? { ...g, start_hole: startHole } : g)));
   };
 
   const toggleGroupMember = (groupIndex: number, userId: string) => {
@@ -101,6 +107,7 @@ export default function NewEventPage() {
   );
 
   const getMemberName = (id: string) => members.find((m) => m.id === id)?.name || '';
+  const selectedCourseHoleCount = courses.find((c) => c.id === courseId)?.course_holes?.length ?? 18;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -298,6 +305,22 @@ export default function NewEventPage() {
                           <option key={m} value={m}>{m}</option>
                         ))}
                       </select>
+                    </div>
+                    <div className="flex rounded overflow-hidden border border-[#d6cabc]">
+                      {([1, 10, ...(selectedCourseHoleCount >= 27 ? [19] : [])] as number[]).map((sh) => (
+                        <button
+                          key={sh}
+                          type="button"
+                          onClick={() => updateGroupStartHole(gi, sh)}
+                          className={`px-2 py-1 text-xs font-bold transition-colors ${
+                            (group.start_hole ?? 1) === sh
+                              ? 'bg-gradient-to-r from-[#1d3937] to-[#195042] text-white'
+                              : 'bg-white text-[#91855a]'
+                          }`}
+                        >
+                          {sh === 1 ? 'OUT' : sh === 10 ? 'IN' : 'EXT'}
+                        </button>
+                      ))}
                     </div>
                     <button
                       type="button"

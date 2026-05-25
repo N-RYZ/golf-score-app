@@ -7,29 +7,25 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const year = searchParams.get('year') || '2026';
 
-    // プレイヤー基本情報と年度別成績をJOIN
-    const { data: players, error: playersError } = await supabase
-      .from('players')
-      .select(`
-        id,
-        name,
-        gender,
-        birth_year,
-        is_active,
-        created_at
-      `)
-      .eq('is_active', true)
-      .order('name');
+    // プレイヤー基本情報と年度別成績を並列取得
+    const [playersResult, statsResult] = await Promise.all([
+      supabase
+        .from('players')
+        .select('id, name, gender, birth_year, is_active, created_at')
+        .eq('is_active', true)
+        .order('name'),
+      supabase
+        .from('player_season_stats')
+        .select('*')
+        .eq('year', parseInt(year))
+    ]);
+
+    const { data: players, error: playersError } = playersResult;
+    const { data: seasonStats, error: statsError } = statsResult;
 
     if (playersError) {
       return NextResponse.json({ error: playersError.message }, { status: 500 });
     }
-
-    // 年度別成績を取得
-    const { data: seasonStats, error: statsError } = await supabase
-      .from('player_season_stats')
-      .select('*')
-      .eq('year', parseInt(year));
 
     if (statsError) {
       return NextResponse.json({ error: statsError.message }, { status: 500 });

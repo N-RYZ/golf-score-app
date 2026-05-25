@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
             event_id: eventId,
             group_number: group.group_number,
             start_time: group.start_time,
+            start_hole: group.start_hole ?? 1,
           })
           .select('id')
           .single();
