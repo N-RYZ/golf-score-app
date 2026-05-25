@@ -3,17 +3,24 @@ import { supabase } from '@/lib/supabase';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-// コース更新（名前 + ホールパー + ナイン名）
+// コース更新（名前 + ホールパー + ナイン名配列）
 export async function PUT(req: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const { name, holes, nine1_name, nine2_name, nine3_name } = await req.json();
+    const { name, holes, nine_names } = await req.json();
 
-    const courseUpdates: Record<string, string | null> = {};
+    const courseUpdates: Record<string, unknown> = {};
     if (name) courseUpdates.name = name;
-    if (nine1_name !== undefined) courseUpdates.nine1_name = nine1_name || 'OUT';
-    if (nine2_name !== undefined) courseUpdates.nine2_name = nine2_name || 'IN';
-    courseUpdates.nine3_name = nine3_name || null;
+
+    if (holes && holes.length >= 18 && holes.length % 9 === 0) {
+      const nineCount = holes.length / 9;
+      const names: string[] = Array.from({ length: nineCount }, (_, i) =>
+        nine_names?.[i] || (i === 0 ? 'OUT' : i === 1 ? 'IN' : `EXT${i - 1}`)
+      );
+      courseUpdates.nine_names = names;
+    } else if (nine_names) {
+      courseUpdates.nine_names = nine_names;
+    }
 
     if (Object.keys(courseUpdates).length > 0) {
       const { error } = await supabase
@@ -32,7 +39,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       }
     }
 
-    if (holes && (holes.length === 18 || holes.length === 27)) {
+    if (holes && holes.length >= 18 && holes.length % 9 === 0) {
       for (let i = 0; i < holes.length; i++) {
         const { error } = await supabase
           .from('course_holes')
@@ -44,14 +51,12 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
       }
-      // 18ホールに戻した場合は19H以降を削除
-      if (holes.length <= 18) {
-        await supabase
-          .from('course_holes')
-          .delete()
-          .eq('course_id', id)
-          .gt('hole_number', 18);
-      }
+      // ナイン数が減った場合は余分なホールを削除
+      await supabase
+        .from('course_holes')
+        .delete()
+        .eq('course_id', id)
+        .gt('hole_number', holes.length);
     }
 
     return NextResponse.json({ success: true });

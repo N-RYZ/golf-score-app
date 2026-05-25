@@ -21,7 +21,7 @@ type EventInfo = {
   name: string;
   event_date: string;
   status: string;
-  courses: { course_holes: CourseHole[]; nine1_name: string; nine2_name: string; nine3_name: string | null } | null;
+  courses: { course_holes: CourseHole[]; nine_names: string[] } | null;
   event_participants: Participant[];
   event_groups: EventGroup[];
   scores: ScoreData[];
@@ -851,11 +851,11 @@ export default function ScoreInputPage() {
                         {!isFront && (
                           <div className="flex justify-center gap-4 mb-2 text-sm">
                             <div>
-                              <span className="text-gray-600">{event.courses?.nine1_name || 'OUT'}:</span>{' '}
+                              <span className="text-gray-600">{event.courses?.nine_names?.[0] || 'OUT'}:</span>{' '}
                               <span className="text-gray-900">{outTotal.strokes || '-'}</span>
                             </div>
                             <div>
-                              <span className="text-gray-600">{event.courses?.nine2_name || 'IN'}:</span>{' '}
+                              <span className="text-gray-600">{event.courses?.nine_names?.[1] || 'IN'}:</span>{' '}
                               <span className="text-gray-900">{inTotal.strokes || '-'}</span>
                             </div>
                           </div>

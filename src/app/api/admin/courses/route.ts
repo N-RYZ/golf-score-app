@@ -6,7 +6,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from('courses')
     .select(`
-      id, name, created_at, nine1_name, nine2_name, nine3_name,
+      id, name, created_at, nine_names,
       course_holes (id, hole_number, par)
     `)
     .order('created_at', { ascending: true });
@@ -25,31 +25,31 @@ export async function GET() {
   return NextResponse.json(sorted);
 }
 
-// コース新規登録（18ホールのパー情報含む）
+// コース新規登録
 export async function POST(req: NextRequest) {
   try {
-    const { name, holes, nine1_name, nine2_name, nine3_name } = await req.json();
+    const { name, holes, nine_names } = await req.json();
 
     if (!name) {
       return NextResponse.json({ error: 'コース名は必須です' }, { status: 400 });
     }
 
-    if (!holes || (holes.length !== 18 && holes.length !== 27)) {
+    if (!holes || holes.length < 18 || holes.length % 9 !== 0) {
       return NextResponse.json(
-        { error: '18ホールまたは27ホールのパーを設定してください' },
+        { error: 'ホール数は18以上かつ9の倍数で設定してください' },
         { status: 400 }
       );
     }
 
+    const nineCount = holes.length / 9;
+    const names: string[] = Array.from({ length: nineCount }, (_, i) =>
+      nine_names?.[i] || (i === 0 ? 'OUT' : i === 1 ? 'IN' : `EXT${i - 1}`)
+    );
+
     // コース作成
     const { data: course, error: courseError } = await supabase
       .from('courses')
-      .insert({
-        name,
-        nine1_name: nine1_name || 'OUT',
-        nine2_name: nine2_name || 'IN',
-        nine3_name: nine3_name || null,
-      })
+      .insert({ name, nine_names: names })
       .select('id, name, created_at')
       .single();
 
@@ -75,7 +75,6 @@ export async function POST(req: NextRequest) {
       .insert(holeRecords);
 
     if (holesError) {
-      // ロールバック：コースも削除
       await supabase.from('courses').delete().eq('id', course.id);
       return NextResponse.json({ error: holesError.message }, { status: 500 });
     }

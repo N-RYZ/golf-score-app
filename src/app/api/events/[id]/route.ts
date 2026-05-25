@@ -11,7 +11,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     .from('events')
     .select(`
       id, name, event_date, status, score_edit_deadline, event_type, is_finalized, year,
-      courses ( id, name, nine1_name, nine2_name, nine3_name,
+      courses ( id, name, nine_names,
         course_holes ( hole_number, par )
       ),
       event_participants ( id, player_id,
