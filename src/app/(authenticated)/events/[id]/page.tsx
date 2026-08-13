@@ -78,6 +78,7 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [finalizing, setFinalizing] = useState(false);
   const [tab, setTab] = useState<Tab>('scores');
+  const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
   const [liveRankingTab, setLiveRankingTab] = useState<'gross' | 'net'>('gross');
 
   const fetchEvent = useCallback(async () => {
@@ -209,6 +210,15 @@ export default function EventDetailPage() {
       return sum + (s?.strokes || 0);
     }, 0);
 
+  const playerPutts = (playerId: string, holeRange: CourseHole[]) =>
+    holeRange.reduce((sum, h) => {
+      const s = getScore(playerId, h.hole_number);
+      return sum + (s?.putts || 0);
+    }, 0);
+
+  const playerGroupNumber = (playerId: string) =>
+    event.event_groups.find((g) => g.group_members.some((m) => m.player_id === playerId))?.group_number;
+
   const calcPenalty = (playerId: string) => {
     let total = 0;
     for (const hole of holes) {
@@ -322,7 +332,7 @@ export default function EventDetailPage() {
             ) : (
               <>
                 <div className="grid" style={{ gridTemplateColumns: '1fr 54px 54px 58px 62px', padding: '0 34px 6px' }}>
-                  <span style={{ fontSize: '12px', color: '#5C7A70' }}>名前</span>
+                  <span className="font-num" style={{ fontSize: '12px', color: '#5C7A70' }}>PAR {holes.reduce((s, h) => s + h.par, 0)}</span>
                   <span className="text-center" style={{ fontSize: '12px', color: '#5C7A70' }}>OUT</span>
                   <span className="text-center" style={{ fontSize: '12px', color: '#5C7A70' }}>IN</span>
                   <span className="text-center" style={{ fontSize: '12px', color: '#5C7A70' }}>計</span>
@@ -332,19 +342,40 @@ export default function EventDetailPage() {
                   const outScore = playerTotal(p.player_id, outHoles);
                   const inScore = playerTotal(p.player_id, inHoles);
                   const penalty = calcPenalty(p.player_id);
+                  const isExpanded = expandedPlayerId === p.player_id;
+                  const groupNumber = playerGroupNumber(p.player_id);
                   return (
-                    <button
+                    <div
                       key={p.id}
-                      onClick={() => router.push(`/events/${eventId}/players/${p.player_id}`)}
-                      className="grid w-full items-center text-left"
-                      style={{ gridTemplateColumns: '1fr 54px 54px 58px 62px', backgroundColor: '#182D28', borderRadius: '14px', padding: '9px 14px' }}
+                      style={{ backgroundColor: isExpanded ? '#1F4A3F' : '#182D28', borderRadius: '14px' }}
                     >
-                      <span className="truncate" style={{ fontSize: '20px', fontWeight: 700, color: '#ffffff' }}>{p.players.name}</span>
-                      <span className="font-num text-center" style={{ fontSize: '18px', fontWeight: 700, color: '#8FA69C' }}>{outScore || '-'}</span>
-                      <span className="font-num text-center" style={{ fontSize: '18px', fontWeight: 700, color: '#8FA69C' }}>{inScore || '-'}</span>
-                      <span className="font-num text-center" style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff' }}>{(outScore + inScore) || '-'}</span>
-                      <span className="font-num text-center" style={{ fontSize: '17px', color: '#9A8F72' }}>{penalty || '-'}</span>
-                    </button>
+                      <button
+                        onClick={() => setExpandedPlayerId(isExpanded ? null : p.player_id)}
+                        className="grid w-full items-center text-left"
+                        style={{ gridTemplateColumns: '1fr 54px 54px 58px 62px', padding: '9px 14px' }}
+                      >
+                        <span className="truncate" style={{ fontSize: '20px', fontWeight: 700, color: '#ffffff' }}>{p.players.name}</span>
+                        <span className="font-num text-center" style={{ fontSize: '18px', fontWeight: 700, color: '#8FA69C' }}>{outScore || '-'}</span>
+                        <span className="font-num text-center" style={{ fontSize: '18px', fontWeight: 700, color: '#8FA69C' }}>{inScore || '-'}</span>
+                        <span className="font-num text-center" style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff' }}>{(outScore + inScore) || '-'}</span>
+                        <span className="font-num text-center" style={{ fontSize: '17px', color: '#9A8F72' }}>{penalty || '-'}</span>
+                      </button>
+                      {isExpanded && (
+                        <div className="flex items-center justify-between" style={{ padding: '0 14px 10px' }}>
+                          <span className="font-num" style={{ fontSize: '13px', color: '#8FD9B4' }}>
+                            パット計{playerPutts(p.player_id, holes) || '-'}
+                            {groupNumber ? `・第${groupNumber}組` : ''}
+                          </span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); router.push(`/events/${eventId}/players/${p.player_id}`); }}
+                            className="font-bold"
+                            style={{ fontSize: '13px', color: '#6BAF8E' }}
+                          >
+                            18ホール詳細を見る ›
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
                 <div
