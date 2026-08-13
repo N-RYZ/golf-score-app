@@ -58,7 +58,6 @@ export default function TourInfoPage() {
 
   const leader = pointRankings.find((r) => r.rank === 1);
   const rest = pointRankings.filter((r) => r.rank !== 1);
-  const totalPPoint = pointRankings.reduce((sum, r) => sum + r.total_points, 0);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0E1A18' }}>
@@ -169,14 +168,6 @@ export default function TourInfoPage() {
                         <span className="font-num shrink-0" style={{ fontSize: '30px', fontWeight: 800, color: '#C9D8D2' }}>{ranking.total_points}</span>
                       </div>
                     ))}
-
-                    <div
-                      className="flex items-center justify-between"
-                      style={{ backgroundColor: '#2C2A20', borderRadius: '14px', padding: '12px 18px' }}
-                    >
-                      <span style={{ fontSize: '14px', fontWeight: 700, color: '#9A8F72' }}>年間 P-Point 累計</span>
-                      <span className="font-num" style={{ fontSize: '30px', fontWeight: 800, color: '#BE9B4B' }}>{totalPPoint} P</span>
-                    </div>
                   </>
                 )}
               </div>
