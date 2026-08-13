@@ -239,8 +239,6 @@ export default function EventDetailPage() {
     return `${d.getFullYear()}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getDate().toString().padStart(2, '0')}`;
   };
 
-  const todayPPoint = participants.reduce((sum, p) => sum + calcPenalty(p.player_id), 0);
-
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0E1A18' }}>
       <header style={{ backgroundColor: '#12211F', padding: '16px 20px' }}>
@@ -378,13 +376,6 @@ export default function EventDetailPage() {
                     </div>
                   );
                 })}
-                <div
-                  className="flex items-center justify-between"
-                  style={{ backgroundColor: '#2C2A20', borderRadius: '14px', padding: '12px 18px', marginTop: '10px' }}
-                >
-                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#9A8F72' }}>本日の P-Point</span>
-                  <span className="font-num" style={{ fontSize: '24px', fontWeight: 800, color: '#BE9B4B' }}>{todayPPoint} P</span>
-                </div>
               </>
             )}
           </div>
