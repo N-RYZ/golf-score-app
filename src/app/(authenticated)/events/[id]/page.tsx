@@ -58,7 +58,13 @@ type EventResult = {
   under_par_strokes: number;
 };
 
-type Tab = 'scores' | 'groups' | 'ranking';
+type Tab = 'scores' | 'ranking' | 'groups';
+
+const eventTypeLabel = (eventType?: string) => {
+  if (eventType === '2' || eventType === 'major') return 'メジャー大会';
+  if (eventType === '3' || eventType === 'final') return '最終戦';
+  return '通常大会';
+};
 
 export default function EventDetailPage() {
   const { user } = useAuth();
@@ -176,16 +182,16 @@ export default function EventDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-[#91855a]">読み込み中...</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0E1A18' }}>
+        <p style={{ color: '#8FA69C' }}>読み込み中...</p>
       </div>
     );
   }
 
   if (!event) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-[#91855a]">イベントが見つかりません</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0E1A18' }}>
+        <p style={{ color: '#8FA69C' }}>イベントが見つかりません</p>
       </div>
     );
   }
@@ -201,12 +207,6 @@ export default function EventDetailPage() {
     holeRange.reduce((sum, h) => {
       const s = getScore(playerId, h.hole_number);
       return sum + (s?.strokes || 0);
-    }, 0);
-
-  const playerPutts = (playerId: string, holeRange: CourseHole[]) =>
-    holeRange.reduce((sum, h) => {
-      const s = getScore(playerId, h.hole_number);
-      return sum + (s?.putts || 0);
     }, 0);
 
   const calcPenalty = (playerId: string) => {
@@ -226,28 +226,31 @@ export default function EventDetailPage() {
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
-    return `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
+    return `${d.getFullYear()}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getDate().toString().padStart(2, '0')}`;
   };
 
+  const todayPPoint = participants.reduce((sum, p) => sum + calcPenalty(p.player_id), 0);
+
   return (
-    <div className="min-h-screen bg-[#d6cabc]/30">
-      <header className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-4 py-3">
+    <div className="min-h-screen" style={{ backgroundColor: '#0E1A18' }}>
+      <header style={{ backgroundColor: '#12211F', padding: '16px 20px' }}>
         <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/events')} className="text-white">
+          <button onClick={() => router.push('/events')} style={{ color: '#ffffff' }}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
               <path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clipRule="evenodd" />
             </svg>
           </button>
-          <div className="flex-1">
-            <h1 className="text-lg font-bold">{event.name}</h1>
-            <p className="text-xs text-[#d6cabc]">
-              {formatDate(event.event_date)} - {event.courses?.name}
+          <div className="flex-1 min-w-0">
+            <h1 className="truncate" style={{ fontSize: '22px', fontWeight: 900, color: '#ffffff' }}>{event.name}</h1>
+            <p className="font-num truncate" style={{ fontSize: '14px', color: '#8FA69C' }}>
+              {formatDate(event.event_date)} · {event.courses?.name}
             </p>
           </div>
           {user?.role === 'admin' && (
             <button
               onClick={() => router.push(`/admin/events/${eventId}/edit`)}
-              className="text-white p-1"
+              style={{ color: '#ffffff' }}
+              className="p-1 shrink-0"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
@@ -259,158 +262,99 @@ export default function EventDetailPage() {
 
       {/* スコア入力ボタン（viewer以外のみ） */}
       {event.status !== 'completed' && user?.role !== 'viewer' && (
-        <div className="px-4 pt-3">
+        <div className="px-5 pt-4">
           <Link
             href={`/events/${eventId}/score/select-group`}
-            className="block w-full bg-gradient-to-r from-[#1d3937] to-[#195042] text-white text-center py-3 rounded-lg font-bold"
+            className="flex items-center justify-center"
+            style={{ height: '56px', borderRadius: '16px', backgroundColor: '#6BAF8E' }}
           >
-            スコア入力
+            <span style={{ fontSize: '19px', fontWeight: 900, color: '#0E1A18' }}>スコア入力</span>
           </Link>
         </div>
       )}
 
       {/* イベント確定ボタン（管理者のみ、未確定の場合のみ表示） */}
       {user?.role === 'admin' && !event.is_finalized && (
-        <div className="px-4 pt-3">
+        <div className="px-5 pt-3">
           <button
             onClick={handleFinalize}
             disabled={finalizing}
-            className="block w-full bg-[#91855a] text-white text-center py-3 rounded-lg font-bold hover:bg-[#91855a]/80 disabled:opacity-50"
+            className="w-full flex items-center justify-center disabled:opacity-50"
+            style={{ height: '52px', borderRadius: '16px', backgroundColor: '#BE9B4B' }}
           >
-            {finalizing ? '確定中...' : 'イベント確定（順位・ポイント・ハンデ計算）'}
+            <span style={{ fontSize: '16px', fontWeight: 900, color: '#1B1608' }}>
+              {finalizing ? '確定中...' : 'イベント確定（順位・ポイント・ハンデ計算）'}
+            </span>
           </button>
         </div>
       )}
 
       {/* タブ */}
-      <div className="flex border-b border-[#d6cabc] mt-3">
+      <div className="flex gap-2 px-5 mt-4">
         {([
           ['scores', 'スコア'],
-          ['groups', '組み合わせ'],
           ['ranking', 'ランキング'],
+          ['groups', '組み合わせ'],
         ] as [Tab, string][]).map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`flex-1 py-2 text-sm font-medium text-center border-b-2 transition-colors ${
-              tab === key
-                ? 'border-[#1d3937] text-[#1d3937]'
-                : 'border-transparent text-[#91855a]'
-            }`}
+            className="font-bold"
+            style={{
+              padding: '8px 16px',
+              borderRadius: '999px',
+              fontSize: '14px',
+              backgroundColor: tab === key ? '#6BAF8E' : '#1B322C',
+              color: tab === key ? '#0E1A18' : '#8FA69C',
+            }}
           >
             {label}
           </button>
         ))}
       </div>
 
-      <main className="p-4">
-        {/* スコア一覧タブ */}
+      <main className="px-5 py-4">
+        {/* スコアタブ */}
         {tab === 'scores' && (
-          <div className="overflow-x-auto">
+          <div className="space-y-2">
             {participants.length === 0 ? (
-              <p className="text-[#91855a] text-sm">参加者がいません</p>
+              <p style={{ color: '#8FA69C' }} className="text-sm">参加者がいません</p>
             ) : (
-              <table className="w-full text-xs border-collapse">
-                <thead>
-                  <tr className="bg-[#d6cabc]">
-                    <th className="sticky left-0 bg-[#d6cabc] px-2 py-1 text-left text-[#1d3937]">名前</th>
-                    {outHoles.map((h) => (
-                      <th key={h.hole_number} className="px-1 py-1 text-center min-w-[28px] text-[#1d3937]">
-                        {h.hole_number}
-                      </th>
-                    ))}
-                    <th className="px-1 py-1 text-center font-bold bg-[#195042] text-white">OUT</th>
-                    {inHoles.map((h) => (
-                      <th key={h.hole_number} className="px-1 py-1 text-center min-w-[28px] text-[#1d3937]">
-                        {h.hole_number}
-                      </th>
-                    ))}
-                    <th className="px-1 py-1 text-center font-bold bg-[#195042] text-white">IN</th>
-                    <th className="px-1 py-1 text-center font-bold bg-gradient-to-r from-[#1d3937] to-[#195042] text-white">計</th>
-                    <th className="px-1 py-1 text-center font-bold bg-[#91855a] text-white">P-Point</th>
-                  </tr>
-                  <tr className="bg-[#d6cabc]/50 text-[#91855a]">
-                    <td className="sticky left-0 bg-[#d6cabc]/50 px-2 py-1">PAR</td>
-                    {outHoles.map((h) => (
-                      <td key={h.hole_number} className="px-1 py-1 text-center">{h.par}</td>
-                    ))}
-                    <td className="px-1 py-1 text-center bg-[#d6cabc]">
-                      {outHoles.reduce((s, h) => s + h.par, 0)}
-                    </td>
-                    {inHoles.map((h) => (
-                      <td key={h.hole_number} className="px-1 py-1 text-center">{h.par}</td>
-                    ))}
-                    <td className="px-1 py-1 text-center bg-[#d6cabc]">
-                      {inHoles.reduce((s, h) => s + h.par, 0)}
-                    </td>
-                    <td className="px-1 py-1 text-center bg-[#d6cabc] text-[#1d3937]">
-                      {holes.reduce((s, h) => s + h.par, 0)}
-                    </td>
-                    <td className="px-1 py-1 text-center font-bold bg-[#91855a]/20 text-[#91855a] whitespace-nowrap">
-                      {(() => {
-                        const total = participants.reduce((sum, p) => sum + calcPenalty(p.player_id), 0);
-                        return total > 0 ? `${total}` : '-';
-                      })()}
-                    </td>
-                  </tr>
-                </thead>
-                <tbody>
-                  {participants.map((p) => {
-                    const outScore = playerTotal(p.player_id, outHoles);
-                    const inScore = playerTotal(p.player_id, inHoles);
-                    const outPutts = playerPutts(p.player_id, outHoles);
-                    const inPutts = playerPutts(p.player_id, inHoles);
-                    const penalty = calcPenalty(p.player_id);
-                    return (
-                      <tr key={p.id} className="border-t border-[#d6cabc]">
-                        <td className="sticky left-0 bg-white px-2 py-1 font-medium whitespace-nowrap text-[#1d3937]">
-                          {p.players.name}
-                        </td>
-                        {outHoles.map((h) => {
-                          const s = getScore(p.player_id, h.hole_number);
-                          const diff = s ? s.strokes - h.par : 0;
-                          return (
-                            <td
-                              key={h.hole_number}
-                              className={`px-1 py-1 text-center whitespace-nowrap ${
-                                diff > 0 ? 'text-[#91855a]' : diff < 0 ? 'text-[#195042]' : 'text-[#1d3937]'
-                              }`}
-                            >
-                              {s ? `${s.strokes}/(${s.putts})` : '-'}
-                            </td>
-                          );
-                        })}
-                        <td className="px-1 py-1 text-center font-bold bg-[#d6cabc]/50 whitespace-nowrap text-[#1d3937]">
-                          {outScore ? `${outScore}/(${outPutts})` : '-'}
-                        </td>
-                        {inHoles.map((h) => {
-                          const s = getScore(p.player_id, h.hole_number);
-                          const diff = s ? s.strokes - h.par : 0;
-                          return (
-                            <td
-                              key={h.hole_number}
-                              className={`px-1 py-1 text-center whitespace-nowrap ${
-                                diff > 0 ? 'text-[#91855a]' : diff < 0 ? 'text-[#195042]' : 'text-[#1d3937]'
-                              }`}
-                            >
-                              {s ? `${s.strokes}/(${s.putts})` : '-'}
-                            </td>
-                          );
-                        })}
-                        <td className="px-1 py-1 text-center font-bold bg-[#d6cabc]/50 whitespace-nowrap text-[#1d3937]">
-                          {inScore ? `${inScore}/(${inPutts})` : '-'}
-                        </td>
-                        <td className="px-1 py-1 text-center font-bold bg-[#d6cabc] whitespace-nowrap text-[#1d3937]">
-                          {(outScore + inScore) ? `${outScore + inScore}/(${outPutts + inPutts})` : '-'}
-                        </td>
-                        <td className="px-1 py-1 text-center font-bold bg-[#91855a]/20 text-[#91855a] whitespace-nowrap">
-                          {penalty > 0 ? `${penalty}` : '-'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <>
+                <div className="grid" style={{ gridTemplateColumns: '1fr 54px 54px 58px 62px', padding: '0 34px 6px' }}>
+                  <span style={{ fontSize: '12px', color: '#5C7A70' }}>名前</span>
+                  <span className="text-center" style={{ fontSize: '12px', color: '#5C7A70' }}>OUT</span>
+                  <span className="text-center" style={{ fontSize: '12px', color: '#5C7A70' }}>IN</span>
+                  <span className="text-center" style={{ fontSize: '12px', color: '#5C7A70' }}>計</span>
+                  <span className="text-center" style={{ fontSize: '12px', color: '#5C7A70' }}>P-Point</span>
+                </div>
+                {participants.map((p) => {
+                  const outScore = playerTotal(p.player_id, outHoles);
+                  const inScore = playerTotal(p.player_id, inHoles);
+                  const penalty = calcPenalty(p.player_id);
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => router.push(`/events/${eventId}/players/${p.player_id}`)}
+                      className="grid w-full items-center text-left"
+                      style={{ gridTemplateColumns: '1fr 54px 54px 58px 62px', backgroundColor: '#182D28', borderRadius: '14px', padding: '9px 14px' }}
+                    >
+                      <span className="truncate" style={{ fontSize: '20px', fontWeight: 700, color: '#ffffff' }}>{p.players.name}</span>
+                      <span className="font-num text-center" style={{ fontSize: '18px', fontWeight: 700, color: '#8FA69C' }}>{outScore || '-'}</span>
+                      <span className="font-num text-center" style={{ fontSize: '18px', fontWeight: 700, color: '#8FA69C' }}>{inScore || '-'}</span>
+                      <span className="font-num text-center" style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff' }}>{(outScore + inScore) || '-'}</span>
+                      <span className="font-num text-center" style={{ fontSize: '17px', color: '#9A8F72' }}>{penalty || '-'}</span>
+                    </button>
+                  );
+                })}
+                <div
+                  className="flex items-center justify-between"
+                  style={{ backgroundColor: '#2C2A20', borderRadius: '14px', padding: '12px 18px', marginTop: '10px' }}
+                >
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#9A8F72' }}>本日の P-Point</span>
+                  <span className="font-num" style={{ fontSize: '24px', fontWeight: 800, color: '#BE9B4B' }}>{todayPPoint} P</span>
+                </div>
+              </>
             )}
           </div>
         )}
@@ -419,19 +363,20 @@ export default function EventDetailPage() {
         {tab === 'groups' && (
           <div className="space-y-3">
             {event.event_groups.length === 0 ? (
-              <p className="text-[#91855a] text-sm">組み合わせが設定されていません</p>
+              <p style={{ color: '#8FA69C' }} className="text-sm">組み合わせが設定されていません</p>
             ) : (
               event.event_groups.map((group) => (
-                <div key={group.id} className="bg-white rounded-lg shadow p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-[#1d3937]">{group.group_number}組</span>
-                    <span className="text-sm text-[#91855a]">{group.start_time}</span>
+                <div key={group.id} style={{ backgroundColor: '#182D28', borderRadius: '18px', padding: '16px 18px' }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span style={{ fontSize: '26px', fontWeight: 900, color: '#ffffff' }}>{group.group_number}組</span>
+                    <span className="font-num" style={{ fontSize: '15px', color: '#8FA69C' }}>{group.start_time}</span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {group.group_members.map((gm) => (
                       <span
                         key={gm.id}
-                        className="bg-[#d6cabc] text-[#1d3937] px-3 py-1 rounded-full text-sm"
+                        className="text-center"
+                        style={{ padding: '11px 0', borderRadius: '12px', backgroundColor: '#12211F', fontSize: '18px', fontWeight: 700, color: '#E4EDE9' }}
                       >
                         {gm.players.name}
                       </span>
@@ -445,124 +390,111 @@ export default function EventDetailPage() {
 
         {/* ランキングタブ */}
         {tab === 'ranking' && (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {/* 確定後: 公式結果 */}
             {event.is_finalized && results.length > 0 ? (
               <>
-                <div className="bg-white rounded-lg shadow overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-[#d6cabc]">
-                      <tr>
-                        <th className="px-3 py-2 text-center text-[#1d3937]">順位</th>
-                        <th className="px-3 py-2 text-left text-[#1d3937]">名前</th>
-                        <th className="px-3 py-2 text-center text-[#1d3937]">グロス</th>
-                        <th className="px-3 py-2 text-center text-[#1d3937]">ネット</th>
-                        <th className="px-3 py-2 text-center text-[#1d3937]">Pt</th>
-                        <th className="px-3 py-2 text-center text-[#1d3937]">HC</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {results.map((result) => {
-                        const handicapChanged = result.handicap_before !== result.handicap_after;
-                        return (
-                          <tr key={result.player_id} className="border-t border-[#d6cabc]">
-                            <td className="px-3 py-3 text-center">
-                              <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${
-                                result.rank === 1 ? 'bg-[#91855a] text-white' :
-                                result.rank === 2 ? 'bg-[#d6cabc] text-[#1d3937]' :
-                                result.rank === 3 ? 'bg-[#195042] text-white' :
-                                'bg-white text-[#91855a] border border-[#d6cabc]'
-                              }`}>
-                                {result.rank}
-                              </span>
-                            </td>
-                            <td className="px-3 py-3 font-medium text-[#1d3937]">{result.players.name}</td>
-                            <td className="px-3 py-3 text-center text-[#1d3937]">{result.gross_score}</td>
-                            <td className="px-3 py-3 text-center font-bold text-[#195042]">
-                              {result.net_score}
-                            </td>
-                            <td className="px-3 py-3 text-center font-bold text-[#195042]">
-                              {result.points}pt
-                            </td>
-                            <td className="px-3 py-3 text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                <span className={handicapChanged ? 'line-through text-[#91855a]' : 'text-[#1d3937]'}>
-                                  {result.handicap_before.toFixed(1)}
-                                </span>
-                                {handicapChanged && (
-                                  <>
-                                    <span className="text-[#91855a]">→</span>
-                                    <span className="font-bold text-[#91855a]">
-                                      {result.handicap_after.toFixed(1)}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                {results.map((result) => {
+                  const isFirst = result.rank === 1;
+                  const handicapChanged = result.handicap_before !== result.handicap_after;
+                  return (
+                    <div
+                      key={result.player_id}
+                      className="flex items-center justify-between"
+                      style={{
+                        borderRadius: '14px',
+                        padding: '11px 16px',
+                        backgroundColor: isFirst ? '#1F4A3F' : '#182D28',
+                        border: isFirst ? '1px solid #2E6B52' : '1px solid transparent',
+                      }}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="font-num shrink-0" style={{ fontSize: '24px', fontWeight: 800, color: isFirst ? '#BE9B4B' : '#5C7A70' }}>
+                          {result.rank}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate" style={{ fontSize: '20px', fontWeight: 700, color: '#ffffff' }}>{result.players.name}</p>
+                          <p className="font-num truncate" style={{ fontSize: '13px', color: '#8FA69C' }}>
+                            GROSS {result.gross_score} · {result.points}pt ·{' '}
+                            {handicapChanged ? (
+                              <>
+                                <span style={{ textDecoration: 'line-through' }}>{result.handicap_before.toFixed(1)}</span>
+                                {' → '}
+                                <span style={{ color: '#6BAF8E', fontWeight: 700 }}>{result.handicap_after.toFixed(1)}</span>
+                              </>
+                            ) : (
+                              <>HC {result.handicap_before.toFixed(1)}</>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="font-num shrink-0" style={{ fontSize: '30px', fontWeight: 800, color: isFirst ? '#6BAF8E' : '#C9D8D2' }}>
+                        {result.net_score}
+                      </span>
+                    </div>
+                  );
+                })}
 
-                <div className="bg-[#d6cabc] border border-[#91855a] rounded-lg p-3 text-xs text-[#1d3937]">
-                  <p className="font-bold mb-1">イベント情報</p>
-                  <p>
-                    種別: {(event.event_type === '2' || event.event_type === 'major') ? 'メジャー大会' : (event.event_type === '3' || event.event_type === 'final') ? '最終戦' : '通常大会'}
+                <div style={{ backgroundColor: '#182D28', borderRadius: '14px', padding: '12px 16px', marginTop: '10px' }}>
+                  <p style={{ fontSize: '13px', fontWeight: 700, color: '#8FA69C' }}>
+                    種別: {eventTypeLabel(event.event_type)}
                   </p>
                 </div>
               </>
             ) : (
               /* 未確定: ライブランキング（グロス/ネット切替） */
               <>
+                <div className="flex gap-2 mb-1">
+                  {(['gross', 'net'] as const).map(t => (
+                    <button
+                      key={t}
+                      onClick={() => setLiveRankingTab(t)}
+                      className="font-bold"
+                      style={{
+                        padding: '7px 16px',
+                        borderRadius: '999px',
+                        fontSize: '13px',
+                        backgroundColor: liveRankingTab === t ? '#6BAF8E' : '#1B322C',
+                        color: liveRankingTab === t ? '#0E1A18' : '#8FA69C',
+                      }}
+                    >
+                      {t === 'gross' ? 'グロス' : 'ネット'}
+                    </button>
+                  ))}
+                </div>
                 {liveRanking.length === 0 ? (
-                  <p className="text-[#91855a] text-sm">スコアデータがありません</p>
+                  <p style={{ color: '#8FA69C' }} className="text-sm">スコアデータがありません</p>
                 ) : (
-                  <div className="bg-white rounded-lg shadow overflow-hidden">
-                    {/* グロス/ネット切替タブ */}
-                    <div className="flex border-b border-[#d6cabc]">
-                      {(['gross', 'net'] as const).map(t => (
-                        <button
-                          key={t}
-                          onClick={() => setLiveRankingTab(t)}
-                          className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
-                            liveRankingTab === t
-                              ? 'border-[#1d3937] text-[#1d3937]'
-                              : 'border-transparent text-[#91855a]'
-                          }`}
+                  [...liveRanking]
+                    .sort((a, b) => liveRankingTab === 'gross' ? a.gross - b.gross : a.net - b.net)
+                    .map((r, idx) => {
+                      const isFirst = idx === 0;
+                      return (
+                        <div
+                          key={r.player_id}
+                          className="flex items-center justify-between"
+                          style={{
+                            borderRadius: '14px',
+                            padding: '11px 16px',
+                            backgroundColor: isFirst ? '#1F4A3F' : '#182D28',
+                            border: isFirst ? '1px solid #2E6B52' : '1px solid transparent',
+                          }}
                         >
-                          {t === 'gross' ? 'グロス' : 'ネット'}
-                        </button>
-                      ))}
-                    </div>
-                    <table className="w-full text-sm">
-                      <thead className="bg-[#d6cabc]">
-                        <tr>
-                          <th className="px-3 py-2 text-center text-[#1d3937]">#</th>
-                          <th className="px-3 py-2 text-left text-[#1d3937]">名前</th>
-                          <th className={`px-3 py-2 text-center ${liveRankingTab === 'gross' ? 'text-[#1d3937] font-bold' : 'text-[#91855a]'}`}>グロス</th>
-                          <th className="px-3 py-2 text-center text-[#91855a]">HC</th>
-                          <th className={`px-3 py-2 text-center ${liveRankingTab === 'net' ? 'text-[#1d3937] font-bold' : 'text-[#91855a]'}`}>ネット</th>
-                          <th className="px-3 py-2 text-center text-[#91855a]">H数</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[...liveRanking]
-                          .sort((a, b) => liveRankingTab === 'gross' ? a.gross - b.gross : a.net - b.net)
-                          .map((r, idx) => (
-                          <tr key={r.player_id} className={`border-t border-[#d6cabc] ${idx === 0 ? 'bg-yellow-50' : ''}`}>
-                            <td className="px-3 py-3 text-center font-bold text-[#91855a]">{idx + 1}</td>
-                            <td className="px-3 py-3 font-medium text-[#1d3937]">{r.name}</td>
-                            <td className={`px-3 py-3 text-center font-bold ${liveRankingTab === 'gross' ? 'text-[#1d3937]' : 'text-[#91855a]'}`}>{r.gross}</td>
-                            <td className="px-3 py-3 text-center text-[#91855a] text-xs">{r.hc}</td>
-                            <td className={`px-3 py-3 text-center font-bold ${liveRankingTab === 'net' ? 'text-[#195042]' : 'text-[#91855a]'}`}>{r.net}</td>
-                            <td className="px-3 py-3 text-center text-[#91855a] text-xs">{r.holesPlayed}H</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="font-num shrink-0" style={{ fontSize: '24px', fontWeight: 800, color: isFirst ? '#BE9B4B' : '#5C7A70' }}>
+                              {idx + 1}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="truncate" style={{ fontSize: '20px', fontWeight: 700, color: '#ffffff' }}>{r.name}</p>
+                              <p className="font-num truncate" style={{ fontSize: '13px', color: '#8FA69C' }}>GROSS {r.gross} · HC {r.hc}</p>
+                            </div>
+                          </div>
+                          <span className="font-num shrink-0" style={{ fontSize: '30px', fontWeight: 800, color: isFirst ? '#6BAF8E' : '#C9D8D2' }}>
+                            {liveRankingTab === 'gross' ? r.gross : r.net}
+                          </span>
+                        </div>
+                      );
+                    })
                 )}
               </>
             )}

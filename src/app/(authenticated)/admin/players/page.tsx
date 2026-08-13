@@ -142,25 +142,26 @@ export default function PlayersPage() {
   };
 
   if (loading) {
-    return <div className="p-6 text-[#91855a]">読み込み中...</div>;
+    return <div className="p-6" style={{ color: '#8FA69C', backgroundColor: '#0E1A18' }}>読み込み中...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-[#d6cabc]/30">
-      <header className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-4 py-3 flex items-center justify-between">
+    <div className="min-h-screen" style={{ backgroundColor: '#0E1A18' }}>
+      <header className="flex items-center justify-between" style={{ backgroundColor: '#12211F', padding: '16px 20px' }}>
         <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/admin')} className="text-white">
+          <button onClick={() => router.push('/admin')} style={{ color: '#ffffff' }}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
               <path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clipRule="evenodd" />
             </svg>
           </button>
-          <h1 className="text-lg font-bold">プレイヤー管理</h1>
+          <h1 style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff' }}>プレイヤー管理</h1>
         </div>
         <div className="flex items-center gap-2">
           <select
             value={year}
             onChange={(e) => setYear(parseInt(e.target.value))}
-            className="px-2 py-1 rounded text-[#1d3937] text-sm bg-white border border-white/30"
+            className="text-sm"
+            style={{ padding: '6px 8px', borderRadius: '8px', backgroundColor: '#1B322C', color: '#E4EDE9', border: '1px solid #2E4A43' }}
           >
             {[2026, 2027, 2028].map(y => (
               <option key={y} value={y}>{y}年度</option>
@@ -168,39 +169,42 @@ export default function PlayersPage() {
           </select>
           <button
             onClick={() => setShowForm(true)}
-            className="px-3 py-1 bg-white text-[#1d3937] rounded text-sm font-bold"
+            className="font-bold"
+            style={{ padding: '7px 16px', borderRadius: '999px', fontSize: '14px', backgroundColor: '#6BAF8E', color: '#0E1A18' }}
           >
-            + 登録
+            ＋ 登録
           </button>
         </div>
       </header>
-      <main className="p-4">
+      <main className="p-5 space-y-3">
 
       {/* 登録・編集フォーム */}
       {showForm && (
-        <div className="fixed inset-0 bg-[#1d3937]/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold mb-4 text-[#1d3937]">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(14,26,24,.7)' }}>
+          <div className="p-6 rounded-2xl max-w-md w-full mx-4" style={{ backgroundColor: '#182D28' }}>
+            <h2 className="mb-4" style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff' }}>
               {editingId ? 'プレイヤー編集' : '新規プレイヤー登録'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1 text-[#91855a]">名前*</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#8FA69C' }}>名前*</label>
                 <input
                   type="text"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#d6cabc] rounded-lg text-[#1d3937]"
+                  className="w-full px-3 py-2 rounded-lg"
+                  style={{ backgroundColor: '#12211F', border: '1.5px solid #2E4A43', color: '#E4EDE9' }}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1 text-[#91855a]">性別</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#8FA69C' }}>性別</label>
                 <select
                   value={formGender}
                   onChange={(e) => setFormGender(e.target.value as 'male' | 'female')}
-                  className="w-full px-3 py-2 border border-[#d6cabc] rounded-lg text-[#1d3937]"
+                  className="w-full px-3 py-2 rounded-lg"
+                  style={{ backgroundColor: '#12211F', border: '1.5px solid #2E4A43', color: '#E4EDE9' }}
                 >
                   <option value="male">男性</option>
                   <option value="female">女性</option>
@@ -208,66 +212,72 @@ export default function PlayersPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1 text-[#91855a]">生年（西暦）</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#8FA69C' }}>生年（西暦）</label>
                 <input
                   type="number"
                   value={formBirthYear}
                   onChange={(e) => setFormBirthYear(e.target.value)}
                   placeholder="1980"
-                  className="w-full px-3 py-2 border border-[#d6cabc] rounded-lg text-[#1d3937]"
+                  className="w-full px-3 py-2 rounded-lg"
+                  style={{ backgroundColor: '#12211F', border: '1.5px solid #2E4A43', color: '#E4EDE9' }}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[#91855a]">{year}年度 初期HC{!editingId && '*'}</label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: '#8FA69C' }}>{year}年度 初期HC{!editingId && '*'}</label>
                   <input
                     type="number"
                     step="0.1"
                     value={formInitialHandicap}
                     onChange={(e) => setFormInitialHandicap(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#d6cabc] rounded-lg text-[#1d3937]"
+                    className="w-full px-3 py-2 rounded-lg"
+                    style={{ backgroundColor: '#12211F', border: '1.5px solid #2E4A43', color: '#E4EDE9' }}
                     required={!editingId}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[#91855a]">{year}年度 現在HC</label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: '#8FA69C' }}>{year}年度 現在HC</label>
                   <input
                     type="number"
                     step="0.1"
                     value={formCurrentHandicap}
                     onChange={(e) => setFormCurrentHandicap(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#d6cabc] rounded-lg text-[#1d3937]"
+                    className="w-full px-3 py-2 rounded-lg"
+                    style={{ backgroundColor: '#12211F', border: '1.5px solid #2E4A43', color: '#E4EDE9' }}
                   />
                 </div>
               </div>
 
               {editingId && (
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[#91855a]">{year}年度 ポイント</label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: '#8FA69C' }}>{year}年度 ポイント</label>
                   <input
                     type="number"
                     min="0"
                     value={formTotalPoints}
                     onChange={(e) => setFormTotalPoints(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#d6cabc] rounded-lg text-[#1d3937]"
+                    className="w-full px-3 py-2 rounded-lg"
+                    style={{ backgroundColor: '#12211F', border: '1.5px solid #2E4A43', color: '#E4EDE9' }}
                   />
                 </div>
               )}
 
-              {error && <p className="text-[#91855a] text-sm">{error}</p>}
+              {error && <p className="text-sm" style={{ color: '#D98E6E' }}>{error}</p>}
 
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-[#1d3937] to-[#195042] text-white rounded-lg hover:opacity-90"
+                  className="flex-1 py-2 rounded-lg font-bold"
+                  style={{ backgroundColor: '#6BAF8E', color: '#0E1A18' }}
                 >
                   {editingId ? '更新' : '登録'}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 px-4 py-2 bg-[#d6cabc] text-[#1d3937] rounded-lg hover:bg-[#d6cabc]/70"
+                  className="flex-1 py-2 rounded-lg font-bold"
+                  style={{ backgroundColor: '#1B322C', color: '#8FA69C' }}
                 >
                   キャンセル
                 </button>
@@ -277,67 +287,51 @@ export default function PlayersPage() {
         </div>
       )}
 
-      {/* プレイヤー一覧 */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-[#d6cabc]">
-          <thead className="bg-[#d6cabc]">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-[#1d3937] uppercase">名前</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-[#1d3937] uppercase">性別</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-[#1d3937] uppercase">生年</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-[#1d3937] uppercase">初期HC</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-[#1d3937] uppercase">現在HC</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-[#1d3937] uppercase">ポイント</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-[#1d3937] uppercase">参加数</th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-[#1d3937] uppercase">操作</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-[#d6cabc]">
-            {players.map((player) => (
-              <tr key={player.id}>
-                <td className="px-6 py-4 whitespace-nowrap font-medium text-[#1d3937]">{player.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#91855a]">
-                  {player.gender === 'female' ? '女性' : '男性'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#91855a]">
-                  {player.birth_year || '-'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-[#91855a]">
-                  {player.initial_handicap?.toFixed(1) || '-'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right font-medium text-[#1d3937]">
-                  {player.current_handicap?.toFixed(1) || '-'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right font-bold text-[#195042]">
-                  {player.total_points}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-[#91855a]">
-                  {player.participation_count}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <button
-                    onClick={() => handleEdit(player)}
-                    className="text-[#195042] hover:text-[#1d3937] mr-3"
-                  >
-                    編集
-                  </button>
-                  <button
-                    onClick={() => handleDelete(player.id, player.name)}
-                    className="text-[#91855a] hover:text-[#1d3937]"
-                  >
-                    削除
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* プレイヤー一覧（カード） */}
+      {players.map((player) => (
+        <div key={player.id} style={{ backgroundColor: '#182D28', borderRadius: '16px', padding: '14px 16px' }}>
+          <div className="flex items-center justify-between mb-3">
+            <span style={{ fontSize: '22px', fontWeight: 700, color: '#ffffff' }}>{player.name}</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleEdit(player)}
+                className="font-bold"
+                style={{ padding: '6px 12px', borderRadius: '10px', fontSize: '14px', backgroundColor: '#1F4A3F', color: '#B9CFC5' }}
+              >
+                編集
+              </button>
+              <button
+                onClick={() => handleDelete(player.id, player.name)}
+                className="font-bold"
+                style={{ padding: '6px 12px', borderRadius: '10px', fontSize: '14px', backgroundColor: '#2A1E1A', color: '#D98E6E' }}
+              >
+                削除
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            <div>
+              <p style={{ fontSize: '12px', color: '#5C7A70' }}>初期HC</p>
+              <p className="font-num" style={{ fontSize: '19px', color: '#C9D8D2' }}>{player.initial_handicap?.toFixed(1) || '-'}</p>
+            </div>
+            <div>
+              <p style={{ fontSize: '12px', color: '#5C7A70' }}>現在HC</p>
+              <p className="font-num" style={{ fontSize: '19px', color: '#ffffff' }}>{player.current_handicap?.toFixed(1) || '-'}</p>
+            </div>
+            <div>
+              <p style={{ fontSize: '12px', color: '#5C7A70' }}>ポイント</p>
+              <p className="font-num" style={{ fontSize: '19px', color: '#6BAF8E' }}>{player.total_points}</p>
+            </div>
+            <div>
+              <p style={{ fontSize: '12px', color: '#5C7A70' }}>参加</p>
+              <p className="font-num" style={{ fontSize: '19px', color: '#C9D8D2' }}>{player.participation_count}</p>
+            </div>
+          </div>
         </div>
-      </div>
+      ))}
 
       {players.length === 0 && (
-        <p className="text-center text-[#91855a] py-8">プレイヤーが登録されていません</p>
+        <p className="text-center py-8" style={{ color: '#8FA69C' }}>プレイヤーが登録されていません</p>
       )}
       </main>
     </div>

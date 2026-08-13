@@ -1,22 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0E1A18;
+  --foreground: #E4EDE9;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --font-sans: var(--font-jp);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: '游ゴシック', 'Yu Gothic', YuGothic, -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+  font-family: var(--font-jp), '游ゴシック', 'Yu Gothic', YuGothic, -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+}
+
+/* 数字・英字（スコア・日付・時刻・ポイント） */
+.font-num {
+  font-family: var(--font-num), 'Archivo', sans-serif;
 }
 
 /* スマホでのテキスト選択・長押しメニュー防止（スコア入力画面用） */

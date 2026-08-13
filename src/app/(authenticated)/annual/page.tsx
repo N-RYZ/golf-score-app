@@ -56,45 +56,58 @@ export default function TourInfoPage() {
     return `${d.getMonth() + 1}/${d.getDate()}`;
   };
 
+  const leader = pointRankings.find((r) => r.rank === 1);
+  const rest = pointRankings.filter((r) => r.rank !== 1);
+  const totalPPoint = pointRankings.reduce((sum, r) => sum + r.total_points, 0);
+
   return (
-    <div className="min-h-screen bg-[#d6cabc]/30">
-      <header className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-4 py-3">
-        <h1 className="text-lg font-bold">ツアー情報</h1>
+    <div className="min-h-screen" style={{ backgroundColor: '#0E1A18' }}>
+      <header style={{ backgroundColor: '#12211F', padding: '22px 20px 14px' }}>
+        <p className="font-num" style={{ fontSize: '12px', fontWeight: 700, color: '#BE9B4B', letterSpacing: '.18em' }}>
+          ANNUAL TOUR
+        </p>
+        <div className="flex items-center justify-between">
+          <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#ffffff' }}>ツアー情報</h1>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setYear(year - 1)}
+              className="font-num flex items-center justify-center"
+              style={{ width: '28px', height: '28px', borderRadius: '999px', backgroundColor: '#1B322C', color: '#8FA69C', fontSize: '14px' }}
+            >
+              ‹
+            </button>
+            <span className="font-num" style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>{year}</span>
+            <button
+              onClick={() => setYear(year + 1)}
+              className="font-num flex items-center justify-center"
+              style={{ width: '28px', height: '28px', borderRadius: '999px', backgroundColor: '#1B322C', color: '#8FA69C', fontSize: '14px' }}
+            >
+              ›
+            </button>
+          </div>
+        </div>
+        <p style={{ fontSize: '15px', color: '#8FA69C' }}>確定済み {finalizedEvents.length}戦</p>
       </header>
 
-      <main className="p-4 space-y-4">
-        {/* 年度選択 */}
-        <div className="flex items-center justify-center gap-4">
-          <button
-            onClick={() => setYear(year - 1)}
-            className="px-3 py-1 bg-white border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
-          >
-            ◀
-          </button>
-          <span className="text-lg font-bold text-[#1d3937]">{year}年</span>
-          <button
-            onClick={() => setYear(year + 1)}
-            className="px-3 py-1 bg-white border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
-          >
-            ▶
-          </button>
-        </div>
-
+      <main className="p-5 space-y-4">
         {/* タブ */}
-        <div className="flex border-b border-[#d6cabc]">
+        <div className="flex gap-2">
           {([
-            ['points', 'ポイントランキング'],
-            ['handicaps', 'ハンデ一覧'],
+            ['points', 'ポイント'],
+            ['handicaps', 'ハンデ'],
             ['events', '大会結果'],
           ] as [Tab, string][]).map(([key, label]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`flex-1 py-2 text-sm font-medium text-center border-b-2 transition-colors ${
-                tab === key
-                  ? 'border-[#1d3937] text-[#1d3937]'
-                  : 'border-transparent text-[#91855a]'
-              }`}
+              className="font-bold"
+              style={{
+                padding: '8px 16px',
+                borderRadius: '999px',
+                fontSize: '14px',
+                backgroundColor: tab === key ? '#BE9B4B' : '#1B322C',
+                color: tab === key ? '#12211F' : '#8FA69C',
+              }}
             >
               {label}
             </button>
@@ -102,102 +115,95 @@ export default function TourInfoPage() {
         </div>
 
         {loading ? (
-          <p className="text-[#91855a] text-sm">読み込み中...</p>
+          <p style={{ color: '#8FA69C' }} className="text-sm">読み込み中...</p>
         ) : (
           <>
             {/* ポイントランキングタブ */}
             {tab === 'points' && (
               <div className="space-y-2">
                 {pointRankings.length === 0 ? (
-                  <p className="text-[#91855a] text-sm">{year}年の成績データがありません</p>
+                  <p style={{ color: '#8FA69C' }} className="text-sm">{year}年の成績データがありません</p>
                 ) : (
-                  pointRankings.map((ranking) => (
-                    <div key={ranking.player_id} className="bg-white rounded-lg shadow p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <span
-                            className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
-                              ranking.rank === 1
-                                ? 'bg-[#91855a] text-white'
-                                : ranking.rank === 2
-                                ? 'bg-[#d6cabc] text-[#1d3937]'
-                                : ranking.rank === 3
-                                ? 'bg-[#195042] text-white'
-                                : 'bg-white text-[#91855a] border border-[#d6cabc]'
-                            }`}
-                          >
-                            {ranking.rank}
-                          </span>
-                          <div>
-                            <p className="font-bold text-[#1d3937]">{ranking.player_name}</p>
-                            <p className="text-xs text-[#91855a]">
-                              {ranking.participation_count}回参加
+                  <>
+                    {leader && (
+                      <div
+                        style={{
+                          borderRadius: '20px',
+                          padding: '20px',
+                          background: 'linear-gradient(140deg, #1F4A3F, #12211F)',
+                          border: '1px solid #2E6B52',
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="min-w-0">
+                            <p style={{ fontSize: '13px', fontWeight: 700, color: '#BE9B4B', letterSpacing: '.14em' }}>CURRENT LEADER</p>
+                            <p className="truncate" style={{ fontSize: '30px', fontWeight: 900, color: '#ffffff' }}>{leader.player_name}</p>
+                            <p className="font-num truncate" style={{ fontSize: '15px', color: '#8FA69C' }}>
+                              {leader.participation_count}戦出場 · HC {leader.initial_handicap.toFixed(1)} → {leader.current_handicap.toFixed(1)}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="font-num" style={{ fontSize: '54px', fontWeight: 800, color: '#6BAF8E', lineHeight: 1 }}>
+                              {leader.total_points}
+                            </p>
+                            <p style={{ fontSize: '14px', color: '#8FA69C' }}>POINTS</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {rest.map((ranking) => (
+                      <div
+                        key={ranking.player_id}
+                        className="flex items-center justify-between"
+                        style={{ backgroundColor: '#182D28', borderRadius: '14px', padding: '12px 16px' }}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="font-num shrink-0" style={{ fontSize: '24px', fontWeight: 800, color: '#5C7A70' }}>{ranking.rank}</span>
+                          <div className="min-w-0">
+                            <p className="truncate" style={{ fontSize: '21px', fontWeight: 700, color: '#ffffff' }}>{ranking.player_name}</p>
+                            <p className="font-num truncate" style={{ fontSize: '13px', color: '#8FA69C' }}>
+                              {ranking.participation_count}戦 · HC {ranking.initial_handicap.toFixed(1)} → {ranking.current_handicap.toFixed(1)}
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-[#195042]">
-                            {ranking.total_points}
-                          </p>
-                          <p className="text-xs text-[#91855a]">ポイント</p>
-                        </div>
+                        <span className="font-num shrink-0" style={{ fontSize: '30px', fontWeight: 800, color: '#C9D8D2' }}>{ranking.total_points}</span>
                       </div>
-                      <div className="flex gap-4 mt-3 text-xs">
-                        <div>
-                          <span className="text-[#91855a]">初期HC: </span>
-                          <span className="font-medium text-[#1d3937]">
-                            {ranking.initial_handicap.toFixed(1)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[#91855a]">現在HC: </span>
-                          <span className={`font-bold ${
-                            ranking.current_handicap < ranking.initial_handicap
-                              ? 'text-[#91855a]'
-                              : 'text-[#1d3937]'
-                          }`}>
-                            {ranking.current_handicap.toFixed(1)}
-                          </span>
-                        </div>
-                      </div>
+                    ))}
+
+                    <div
+                      className="flex items-center justify-between"
+                      style={{ backgroundColor: '#2C2A20', borderRadius: '14px', padding: '12px 18px' }}
+                    >
+                      <span style={{ fontSize: '14px', fontWeight: 700, color: '#9A8F72' }}>年間 P-Point 累計</span>
+                      <span className="font-num" style={{ fontSize: '30px', fontWeight: 800, color: '#BE9B4B' }}>{totalPPoint} P</span>
                     </div>
-                  ))
+                  </>
                 )}
               </div>
             )}
 
             {/* ハンデ一覧タブ */}
             {tab === 'handicaps' && (
-              <div>
+              <div className="space-y-2">
                 {pointRankings.length === 0 ? (
-                  <p className="text-[#91855a] text-sm">{year}年のデータがありません</p>
+                  <p style={{ color: '#8FA69C' }} className="text-sm">{year}年のデータがありません</p>
                 ) : (
-                  <div className="bg-white rounded-lg shadow overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-[#d6cabc] border-b border-[#d6cabc]">
-                          <th className="text-left px-4 py-3 font-medium text-[#1d3937]">名前</th>
-                          <th className="text-center px-4 py-3 font-medium text-[#1d3937]">初期HC</th>
-                          <th className="text-center px-4 py-3 font-medium text-[#1d3937]">現在HC</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[...pointRankings].sort((a, b) => a.current_handicap - b.current_handicap).map((ranking) => (
-                          <tr key={ranking.player_id} className="border-b border-[#d6cabc] last:border-b-0">
-                            <td className="px-4 py-3 font-medium text-[#1d3937]">{ranking.player_name}</td>
-                            <td className="px-4 py-3 text-center text-[#91855a]">{ranking.initial_handicap.toFixed(1)}</td>
-                            <td className={`px-4 py-3 text-center font-bold ${
-                              ranking.current_handicap < ranking.initial_handicap
-                                ? 'text-[#91855a]'
-                                : 'text-[#1d3937]'
-                            }`}>
-                              {ranking.current_handicap.toFixed(1)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  [...pointRankings]
+                    .sort((a, b) => a.current_handicap - b.current_handicap)
+                    .map((ranking) => (
+                      <div
+                        key={ranking.player_id}
+                        className="flex items-center justify-between"
+                        style={{ backgroundColor: '#182D28', borderRadius: '14px', padding: '12px 16px' }}
+                      >
+                        <span style={{ fontSize: '20px', fontWeight: 700, color: '#ffffff' }}>{ranking.player_name}</span>
+                        <div className="font-num flex items-center gap-2" style={{ fontSize: '18px' }}>
+                          <span style={{ color: '#5C7A70' }}>{ranking.initial_handicap.toFixed(1)}</span>
+                          <span style={{ color: '#5C7A70' }}>→</span>
+                          <span style={{ fontWeight: 800, color: '#6BAF8E' }}>{ranking.current_handicap.toFixed(1)}</span>
+                        </div>
+                      </div>
+                    ))
                 )}
               </div>
             )}
@@ -206,23 +212,22 @@ export default function TourInfoPage() {
             {tab === 'events' && (
               <div className="space-y-2">
                 {finalizedEvents.length === 0 ? (
-                  <p className="text-[#91855a] text-sm">{year}年の確定済み大会はありません</p>
+                  <p style={{ color: '#8FA69C' }} className="text-sm">{year}年の確定済み大会はありません</p>
                 ) : (
                   finalizedEvents.map((event) => (
                     <button
                       key={event.id}
                       onClick={() => router.push(`/events/${event.id}`)}
-                      className="w-full bg-white rounded-lg shadow p-4 text-left"
+                      className="w-full flex items-center justify-between text-left"
+                      style={{ backgroundColor: '#182D28', borderRadius: '14px', padding: '14px 16px' }}
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-bold text-[#1d3937]">{event.name}</p>
-                          <p className="text-xs text-[#91855a]">{formatDate(event.event_date)}</p>
-                        </div>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-[#91855a]">
-                          <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                        </svg>
+                      <div>
+                        <p style={{ fontSize: '18px', fontWeight: 700, color: '#ffffff' }}>{event.name}</p>
+                        <p className="font-num" style={{ fontSize: '13px', color: '#8FA69C' }}>{formatDate(event.event_date)}</p>
                       </div>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5" style={{ color: '#3E574F' }}>
+                        <path fillRule="evenodd" d="M8.22 5.22a.75.75 0 011.06 0l6.5 6.5a.75.75 0 010 1.06l-6.5 6.5a.75.75 0 11-1.06-1.06L14.19 12 8.22 6.03a.75.75 0 010-1.06z" clipRule="evenodd" />
+                      </svg>
                     </button>
                   ))
                 )}

@@ -139,19 +139,20 @@ export default function CoursesPage() {
     return (
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-bold text-[#1d3937]">
+          <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>
             ホール {startH}–{startH + 8}
           </span>
-          <span className="text-xs text-[#91855a]">合計: {nineTotal(nineIdx)}</span>
+          <span style={{ fontSize: '12px', color: '#8FA69C' }}>合計: {nineTotal(nineIdx)}</span>
         </div>
         <div className="grid grid-cols-9 gap-1">
           {Array.from({ length: 9 }).map((_, i) => (
             <div key={i} className="text-center">
-              <div className="text-xs text-[#91855a] mb-1">{startH + i}H</div>
+              <div style={{ fontSize: '11px', color: '#5C7A70', marginBottom: '4px' }}>{startH + i}H</div>
               <select
                 value={formHoles[nineIdx * 9 + i] ?? 4}
                 onChange={(e) => setHolePar(nineIdx * 9 + i, Number(e.target.value))}
-                className="w-full text-center border border-[#d6cabc] rounded py-1 text-sm text-[#1d3937]"
+                className="w-full text-center rounded py-1 text-sm"
+                style={{ backgroundColor: '#12211F', border: '1px solid #2E4A43', color: '#E4EDE9' }}
               >
                 <option value={3}>3</option>
                 <option value={4}>4</option>
@@ -170,97 +171,85 @@ export default function CoursesPage() {
   const extraNines = nineNames.slice(2);
 
   return (
-    <div className="min-h-screen bg-[#d6cabc]/30">
-      <header className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-4 py-3 flex items-center justify-between">
+    <div className="min-h-screen" style={{ backgroundColor: '#0E1A18' }}>
+      <header className="flex items-center justify-between" style={{ backgroundColor: '#12211F', padding: '16px 20px' }}>
         <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/admin')} className="text-white">
+          <button onClick={() => router.push('/admin')} style={{ color: '#ffffff' }}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
               <path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clipRule="evenodd" />
             </svg>
           </button>
-          <h1 className="text-lg font-bold">コース管理</h1>
+          <h1 style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff' }}>コース管理</h1>
         </div>
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="bg-white text-[#1d3937] px-3 py-1 rounded-md text-sm font-bold"
+          className="font-bold"
+          style={{ padding: '7px 16px', borderRadius: '999px', fontSize: '14px', backgroundColor: '#6BAF8E', color: '#0E1A18' }}
         >
-          + 追加
+          ＋ 追加
         </button>
       </header>
 
-      <main className="p-4">
+      <main className="p-5 space-y-3">
         {showForm && (
-          <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-4 mb-4 space-y-4">
-            <h2 className="font-bold text-[#1d3937]">
+          <form onSubmit={handleSubmit} className="space-y-4" style={{ backgroundColor: '#182D28', borderRadius: '16px', padding: '16px' }}>
+            <h2 style={{ fontSize: '17px', fontWeight: 900, color: '#ffffff' }}>
               {editingId ? 'コース編集' : '新規コース登録'}
             </h2>
 
             {error && (
-              <div className="bg-[#91855a]/20 border border-[#91855a] text-[#1d3937] px-3 py-2 rounded text-sm">
+              <div className="px-3 py-2 rounded text-sm" style={{ backgroundColor: '#2A1E1A', border: '1px solid #7A3B26', color: '#D98E6E' }}>
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-[#91855a] mb-1">コース名</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#8FA69C' }}>コース名</label>
               <input
                 type="text"
                 required
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                className="w-full px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
+                className="w-full px-3 py-2 rounded-md text-sm"
+                style={{ backgroundColor: '#12211F', border: '1.5px solid #2E4A43', color: '#E4EDE9' }}
                 placeholder="例: ○○カントリークラブ"
               />
             </div>
 
             {/* ナインタブ */}
             <div>
-              <div className="flex rounded overflow-hidden border border-[#d6cabc] mb-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveNineTab('out')}
-                  className={`flex-1 py-2 text-sm font-bold transition-colors ${
-                    activeNineTab === 'out'
-                      ? 'bg-gradient-to-r from-[#1d3937] to-[#195042] text-white'
-                      : 'bg-white text-[#91855a]'
-                  }`}
-                >
-                  OUT
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveNineTab('in')}
-                  className={`flex-1 py-2 text-sm font-bold transition-colors border-x border-[#d6cabc] ${
-                    activeNineTab === 'in'
-                      ? 'bg-gradient-to-r from-[#1d3937] to-[#195042] text-white'
-                      : 'bg-white text-[#91855a]'
-                  }`}
-                >
-                  IN
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveNineTab('extra')}
-                  className={`flex-1 py-2 text-sm font-bold transition-colors ${
-                    activeNineTab === 'extra'
-                      ? 'bg-gradient-to-r from-[#1d3937] to-[#195042] text-white'
-                      : 'bg-white text-[#91855a]'
-                  }`}
-                >
-                  入力{extraNines.length > 0 && ` (${extraNines.length})`}
-                </button>
+              <div className="flex rounded-lg overflow-hidden mb-3" style={{ border: '1px solid #2E4A43' }}>
+                {([
+                  ['out', 'OUT'],
+                  ['in', 'IN'],
+                  ['extra', `入力${extraNines.length > 0 ? ` (${extraNines.length})` : ''}`],
+                ] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setActiveNineTab(key)}
+                    className="flex-1 py-2 text-sm font-bold transition-colors"
+                    style={{
+                      backgroundColor: activeNineTab === key ? '#6BAF8E' : 'transparent',
+                      color: activeNineTab === key ? '#0E1A18' : '#8FA69C',
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
 
               {/* OUT タブ */}
               {activeNineTab === 'out' && (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-[#91855a] mb-1">ナイン名</label>
+                    <label className="block text-sm font-medium mb-1" style={{ color: '#8FA69C' }}>ナイン名</label>
                     <input
                       type="text"
                       value={nineNames[0]}
                       onChange={(e) => updateNineName(0, e.target.value)}
-                      className="w-full px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
+                      className="w-full px-3 py-2 rounded-md text-sm"
+                      style={{ backgroundColor: '#12211F', border: '1.5px solid #2E4A43', color: '#E4EDE9' }}
                       placeholder="OUT"
                     />
                   </div>
@@ -272,12 +261,13 @@ export default function CoursesPage() {
               {activeNineTab === 'in' && (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-[#91855a] mb-1">ナイン名</label>
+                    <label className="block text-sm font-medium mb-1" style={{ color: '#8FA69C' }}>ナイン名</label>
                     <input
                       type="text"
                       value={nineNames[1]}
                       onChange={(e) => updateNineName(1, e.target.value)}
-                      className="w-full px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
+                      className="w-full px-3 py-2 rounded-md text-sm"
+                      style={{ backgroundColor: '#12211F', border: '1.5px solid #2E4A43', color: '#E4EDE9' }}
                       placeholder="IN"
                     />
                   </div>
@@ -289,33 +279,35 @@ export default function CoursesPage() {
               {activeNineTab === 'extra' && (
                 <div className="space-y-4">
                   {extraNines.length === 0 && (
-                    <p className="text-sm text-[#91855a] text-center py-2">
+                    <p className="text-sm text-center py-2" style={{ color: '#8FA69C' }}>
                       第3ナイン以降を追加できます（27H、36H、45H…）
                     </p>
                   )}
                   {extraNines.map((nineName, extraIdx) => {
                     const nineIdx = extraIdx + 2;
                     return (
-                      <div key={extraIdx} className="border border-[#d6cabc] rounded-lg p-3 space-y-3">
+                      <div key={extraIdx} className="rounded-lg p-3 space-y-3" style={{ border: '1px solid #2E4A43' }}>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-bold text-[#1d3937]">
+                          <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>
                             第{nineIdx + 1}ナイン
                           </span>
                           <button
                             type="button"
                             onClick={() => removeExtraNine(extraIdx)}
-                            className="text-[#91855a] text-sm"
+                            className="text-sm"
+                            style={{ color: '#D98E6E' }}
                           >
                             削除
                           </button>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-[#91855a] mb-1">ナイン名</label>
+                          <label className="block text-sm font-medium mb-1" style={{ color: '#8FA69C' }}>ナイン名</label>
                           <input
                             type="text"
                             value={nineName}
                             onChange={(e) => updateNineName(nineIdx, e.target.value)}
-                            className="w-full px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
+                            className="w-full px-3 py-2 rounded-md text-sm"
+                            style={{ backgroundColor: '#12211F', border: '1.5px solid #2E4A43', color: '#E4EDE9' }}
                             placeholder={`EXT${extraIdx > 0 ? extraIdx + 1 : ''}`}
                           />
                         </div>
@@ -326,29 +318,32 @@ export default function CoursesPage() {
                   <button
                     type="button"
                     onClick={addExtraNine}
-                    className="w-full py-2 bg-gradient-to-r from-[#1d3937] to-[#195042] text-white text-sm font-bold rounded-md"
+                    className="w-full py-3 text-sm font-bold rounded-md"
+                    style={{ border: '1.5px dashed #2E4A43', color: '#6BAF8E' }}
                   >
-                    + ナインを追加
+                    ＋ ナインを追加
                   </button>
                 </div>
               )}
             </div>
 
-            <div className="text-right text-sm text-[#91855a]">
+            <div className="text-right text-sm" style={{ color: '#8FA69C' }}>
               合計パー: {totalPar}（{nineNames.length}ナイン / {formHoles.length}H）
             </div>
 
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="flex-1 bg-gradient-to-r from-[#1d3937] to-[#195042] text-white py-2 rounded-md text-sm font-bold"
+                className="flex-1 py-2 rounded-md text-sm font-bold"
+                style={{ backgroundColor: '#6BAF8E', color: '#0E1A18' }}
               >
                 {editingId ? '更新' : '登録'}
               </button>
               <button
                 type="button"
                 onClick={resetForm}
-                className="flex-1 bg-[#d6cabc] text-[#1d3937] py-2 rounded-md text-sm"
+                className="flex-1 py-2 rounded-md text-sm"
+                style={{ backgroundColor: '#1B322C', color: '#8FA69C' }}
               >
                 キャンセル
               </button>
@@ -358,41 +353,43 @@ export default function CoursesPage() {
 
         {/* コース一覧 */}
         {loading ? (
-          <p className="text-[#91855a] text-sm">読み込み中...</p>
+          <p style={{ color: '#8FA69C' }} className="text-sm">読み込み中...</p>
         ) : courses.length === 0 ? (
-          <p className="text-[#91855a] text-sm">コースが登録されていません</p>
+          <p style={{ color: '#8FA69C' }} className="text-sm">コースが登録されていません</p>
         ) : (
           <div className="space-y-3">
             {courses.map((course) => {
               const names = course.nine_names?.length >= 2 ? course.nine_names : ['OUT', 'IN'];
               return (
-                <div key={course.id} className="bg-white rounded-lg shadow p-4">
+                <div key={course.id} style={{ backgroundColor: '#182D28', borderRadius: '16px', padding: '14px 16px' }}>
                   <div className="flex items-center justify-between mb-2">
-                    <p className="font-bold text-[#1d3937]">{course.name}</p>
+                    <p style={{ fontSize: '17px', fontWeight: 700, color: '#ffffff' }}>{course.name}</p>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEdit(course)}
-                        className="text-[#195042] text-sm px-2 py-1"
+                        className="font-bold"
+                        style={{ padding: '6px 12px', borderRadius: '10px', fontSize: '13px', backgroundColor: '#1F4A3F', color: '#B9CFC5' }}
                       >
                         編集
                       </button>
                       <button
                         onClick={() => handleDelete(course)}
-                        className="text-[#91855a] text-sm px-2 py-1"
+                        className="font-bold"
+                        style={{ padding: '6px 12px', borderRadius: '10px', fontSize: '13px', backgroundColor: '#2A1E1A', color: '#D98E6E' }}
                       >
                         削除
                       </button>
                     </div>
                   </div>
                   {course.course_holes.length > 0 && (
-                    <div className="text-xs text-[#91855a] space-y-0.5">
+                    <div className="space-y-0.5" style={{ fontSize: '12px', color: '#8FA69C' }}>
                       {names.map((nineName, i) => (
-                        <div key={i} className="flex gap-1 flex-wrap">
-                          <span className="font-bold">{nineName || `${i + 1}N`}:</span>
+                        <div key={i} className="font-num flex gap-1 flex-wrap">
+                          <span className="font-bold" style={{ color: '#B9CFC5' }}>{nineName || `${i + 1}N`}:</span>
                           {course.course_holes.slice(i * 9, (i + 1) * 9).map((h) => (
                             <span key={h.hole_number}>{h.par}</span>
                           ))}
-                          <span className="ml-1 font-bold">
+                          <span className="ml-1 font-bold" style={{ color: '#B9CFC5' }}>
                             = {course.course_holes.slice(i * 9, (i + 1) * 9).reduce((a, h) => a + h.par, 0)}
                           </span>
                         </div>

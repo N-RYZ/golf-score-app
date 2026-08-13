@@ -35,8 +35,8 @@ export default function AuthenticatedLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-[#91855a]">読み込み中...</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0E1A18' }}>
+        <p style={{ color: '#8FA69C' }}>読み込み中...</p>
       </div>
     );
   }
@@ -44,9 +44,12 @@ export default function AuthenticatedLayout({
   if (!user) return null;
 
   return (
-    <div className={shouldShowFooter ? "min-h-screen pb-14" : "min-h-screen"}>
+    <div className={shouldShowFooter ? "min-h-screen pb-[76px]" : "min-h-screen"} style={{ backgroundColor: '#0E1A18' }}>
       {isViewer && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white text-center text-xs font-bold py-1 pointer-events-none">
+        <div
+          className="fixed top-0 left-0 right-0 z-50 text-center text-xs font-bold py-1 pointer-events-none"
+          style={{ backgroundColor: '#BE9B4B', color: '#1B1608' }}
+        >
           閲覧モード（データの更新はできません）
         </div>
       )}

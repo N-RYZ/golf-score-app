@@ -63,26 +63,37 @@ export default function AdminPage() {
   if (!user || user.role !== 'admin') return null;
 
   return (
-    <div className="min-h-screen bg-[#d6cabc]/30">
-      <div className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-4 py-4">
-        <h1 className="text-lg font-bold">管理メニュー</h1>
+    <div className="min-h-screen" style={{ backgroundColor: '#0E1A18' }}>
+      <div style={{ backgroundColor: '#12211F', padding: '22px 20px 14px' }}>
+        <p className="font-num" style={{ fontSize: '12px', fontWeight: 700, color: '#6BAF8E', letterSpacing: '.18em' }}>ADMIN</p>
+        <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#ffffff' }}>管理メニュー</h1>
       </div>
 
-      <div className="p-4 space-y-3">
+      <div className="p-5 space-y-3">
         {menuItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
-            className="flex items-center gap-4 bg-white rounded-lg shadow-sm p-4 hover:bg-[#d6cabc]/20 transition-colors"
+            className="flex items-center gap-4"
+            style={{ backgroundColor: '#182D28', borderRadius: '18px', padding: '20px' }}
           >
-            <div className="text-[#1d3937]">
+            <div
+              className="flex items-center justify-center shrink-0"
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '14px',
+                backgroundColor: item.href === '/admin/csv' ? '#2C2A20' : '#1F4A3F',
+                color: item.href === '/admin/csv' ? '#D8C79A' : '#6BAF8E',
+              }}
+            >
               {item.icon}
             </div>
-            <div>
-              <p className="font-medium text-[#1d3937]">{item.label}</p>
-              <p className="text-sm text-[#91855a]">{item.description}</p>
+            <div className="min-w-0">
+              <p style={{ fontSize: '21px', fontWeight: 700, color: '#ffffff' }}>{item.label}</p>
+              <p style={{ fontSize: '14px', color: '#8FA69C' }}>{item.description}</p>
             </div>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 ml-auto text-[#91855a]">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 ml-auto shrink-0" style={{ color: '#5C7A70' }}>
               <path fillRule="evenodd" d="M16.28 11.47a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 01-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 011.06-1.06l7.5 7.5z" clipRule="evenodd" />
             </svg>
           </Link>

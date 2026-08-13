@@ -161,55 +161,58 @@ export default function NewEventPage() {
   if (user?.role !== 'admin') return null;
 
   return (
-    <div className="min-h-screen bg-[#d6cabc]/30">
-      <header className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-4 py-3 flex items-center gap-3">
-        <button onClick={() => router.push('/admin')} className="text-white">
+    <div className="min-h-screen" style={{ backgroundColor: '#0E1A18' }}>
+      <header className="flex items-center gap-3" style={{ backgroundColor: '#12211F', padding: '16px 20px' }}>
+        <button onClick={() => router.push('/admin')} style={{ color: '#ffffff' }}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
             <path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clipRule="evenodd" />
           </svg>
         </button>
-        <h1 className="text-lg font-bold">イベント作成</h1>
+        <h1 style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff' }}>イベント作成</h1>
       </header>
 
-      <main className="p-4">
+      <main className="p-5">
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
-            <div className="bg-[#91855a]/20 border border-[#91855a] text-[#1d3937] px-3 py-2 rounded text-sm">
+            <div className="px-3 py-2 rounded text-sm" style={{ backgroundColor: '#2A1E1A', border: '1px solid #7A3B26', color: '#D98E6E' }}>
               {error}
             </div>
           )}
 
           {/* 基本情報 */}
-          <section className="bg-white rounded-lg shadow p-4 space-y-3">
-            <h2 className="font-bold text-[#1d3937]">基本情報</h2>
+          <section className="space-y-3" style={{ backgroundColor: '#182D28', borderRadius: '18px', padding: '16px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>基本情報</h2>
             <div>
-              <label className="block text-sm font-medium text-[#91855a] mb-1">イベント名</label>
+              <label className="block mb-1" style={{ fontSize: '14px', fontWeight: 700, color: '#8FA69C' }}>イベント名</label>
               <input
                 type="text"
                 required
                 value={eventName}
                 onChange={(e) => setEventName(e.target.value)}
-                className="w-full px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
+                className="w-full px-3 rounded-md text-[18px]"
+                style={{ height: '50px', backgroundColor: '#12211F', border: '1.5px solid #2E4A43', color: '#E4EDE9' }}
                 placeholder="例: 第12回月例会"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#91855a] mb-1">日付</label>
+              <label className="block mb-1" style={{ fontSize: '14px', fontWeight: 700, color: '#8FA69C' }}>日付</label>
               <input
                 type="date"
                 required
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
-                className="w-full px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
+                className="w-full px-3 rounded-md text-[18px]"
+                style={{ height: '50px', backgroundColor: '#12211F', border: '1.5px solid #2E4A43', color: '#E4EDE9' }}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#91855a] mb-1">コース</label>
+              <label className="block mb-1" style={{ fontSize: '14px', fontWeight: 700, color: '#8FA69C' }}>コース</label>
               <select
                 required
                 value={courseId}
                 onChange={(e) => setCourseId(e.target.value)}
-                className="w-full px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
+                className="w-full px-3 rounded-md text-[18px]"
+                style={{ height: '50px', backgroundColor: '#12211F', border: '1.5px solid #2E4A43', color: '#E4EDE9' }}
               >
                 <option value="">選択してください</option>
                 {courses.map((c) => (
@@ -218,18 +221,19 @@ export default function NewEventPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#91855a] mb-1">大会種別</label>
+              <label className="block mb-1" style={{ fontSize: '14px', fontWeight: 700, color: '#8FA69C' }}>大会種別</label>
               <div className="grid grid-cols-3 gap-2">
                 {([['1', '通常大会'], ['2', 'メジャー大会'], ['3', '最終戦']] as const).map(([val, label]) => (
                   <button
                     key={val}
                     type="button"
                     onClick={() => setEventType(val)}
-                    className={`py-2 rounded-md text-sm font-medium border transition-colors ${
-                      eventType === val
-                        ? 'bg-gradient-to-r from-[#1d3937] to-[#195042] text-white border-[#1d3937]'
-                        : 'bg-white text-[#91855a] border-[#d6cabc]'
-                    }`}
+                    className="py-2 rounded-md text-sm font-medium transition-colors"
+                    style={{
+                      backgroundColor: eventType === val ? '#1F4A3F' : '#182D28',
+                      color: eventType === val ? '#ffffff' : '#8FA69C',
+                      border: eventType === val ? '1.5px solid #6BAF8E' : '1.5px solid #2E4A43',
+                    }}
                   >
                     {label}
                   </button>
@@ -239,21 +243,25 @@ export default function NewEventPage() {
           </section>
 
           {/* 参加者選択 */}
-          <section className="bg-white rounded-lg shadow p-4 space-y-3">
-            <h2 className="font-bold text-[#1d3937]">
+          <section className="space-y-3" style={{ backgroundColor: '#182D28', borderRadius: '18px', padding: '16px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>
               参加者 ({selectedParticipants.length}人)
             </h2>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-wrap gap-2">
               {members.map((m) => (
                 <button
                   key={m.id}
                   type="button"
                   onClick={() => toggleParticipant(m.id)}
-                  className={`px-3 py-2 rounded-md text-sm font-medium border transition-colors ${
-                    selectedParticipants.includes(m.id)
-                      ? 'bg-gradient-to-r from-[#1d3937] to-[#195042] text-white border-[#1d3937]'
-                      : 'bg-white text-[#91855a] border-[#d6cabc]'
-                  }`}
+                  className="font-bold transition-colors"
+                  style={{
+                    padding: '9px 14px',
+                    borderRadius: '999px',
+                    fontSize: '17px',
+                    backgroundColor: selectedParticipants.includes(m.id) ? '#1F4A3F' : '#182D28',
+                    color: selectedParticipants.includes(m.id) ? '#ffffff' : '#8FA69C',
+                    border: selectedParticipants.includes(m.id) ? '1.5px solid #6BAF8E' : '1.5px solid #2E4A43',
+                  }}
                 >
                   {m.name}
                 </button>
@@ -262,26 +270,27 @@ export default function NewEventPage() {
           </section>
 
           {/* 組み合わせ */}
-          <section className="bg-white rounded-lg shadow p-4 space-y-3">
+          <section className="space-y-3" style={{ backgroundColor: '#182D28', borderRadius: '18px', padding: '16px' }}>
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-[#1d3937]">組み合わせ</h2>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>組み合わせ</h2>
               <button
                 type="button"
                 onClick={addGroup}
-                className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-3 py-1 rounded-md text-sm font-bold"
+                className="font-bold"
+                style={{ padding: '6px 14px', borderRadius: '999px', fontSize: '13px', backgroundColor: '#6BAF8E', color: '#0E1A18' }}
               >
                 + 組追加
               </button>
             </div>
 
             {groups.length === 0 && (
-              <p className="text-[#91855a] text-sm">組を追加してメンバーを割り当ててください</p>
+              <p className="text-sm" style={{ color: '#8FA69C' }}>組を追加してメンバーを割り当ててください</p>
             )}
 
             {groups.map((group, gi) => (
-              <div key={gi} className="border border-[#d6cabc] rounded-lg p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-[#1d3937]">
+              <div key={gi} className="rounded-lg p-3 space-y-2" style={{ border: '1px solid #2E4A43' }}>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="font-bold text-sm" style={{ color: '#ffffff' }}>
                     {group.group_number}組
                   </span>
                   <div className="flex items-center gap-2">
@@ -289,34 +298,36 @@ export default function NewEventPage() {
                       <select
                         value={group.start_time.slice(0, 2)}
                         onChange={(e) => updateGroupTime(gi, `${e.target.value}:${group.start_time.slice(3, 5)}`)}
-                        className="px-1 py-1 border border-[#d6cabc] rounded text-sm text-[#1d3937]"
+                        className="px-1 py-1 rounded text-sm"
+                        style={{ backgroundColor: '#12211F', border: '1px solid #2E4A43', color: '#E4EDE9' }}
                       >
                         {Array.from({ length: 13 }, (_, i) => i + 5).map((h) => (
                           <option key={h} value={String(h).padStart(2, '0')}>{String(h).padStart(2, '0')}</option>
                         ))}
                       </select>
-                      <span className="text-[#1d3937] font-bold">:</span>
+                      <span className="font-bold" style={{ color: '#8FA69C' }}>:</span>
                       <select
                         value={group.start_time.slice(3, 5)}
                         onChange={(e) => updateGroupTime(gi, `${group.start_time.slice(0, 2)}:${e.target.value}`)}
-                        className="px-1 py-1 border border-[#d6cabc] rounded text-sm text-[#1d3937]"
+                        className="px-1 py-1 rounded text-sm"
+                        style={{ backgroundColor: '#12211F', border: '1px solid #2E4A43', color: '#E4EDE9' }}
                       >
                         {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map((m) => (
                           <option key={m} value={m}>{m}</option>
                         ))}
                       </select>
                     </div>
-                    <div className="flex rounded overflow-hidden border border-[#d6cabc]">
+                    <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid #2E4A43' }}>
                       {([1, 10, ...(selectedCourseHoleCount >= 27 ? [19] : [])] as number[]).map((sh) => (
                         <button
                           key={sh}
                           type="button"
                           onClick={() => updateGroupStartHole(gi, sh)}
-                          className={`px-2 py-1 text-xs font-bold transition-colors ${
-                            (group.start_hole ?? 1) === sh
-                              ? 'bg-gradient-to-r from-[#1d3937] to-[#195042] text-white'
-                              : 'bg-white text-[#91855a]'
-                          }`}
+                          className="px-2 py-1 text-xs font-bold transition-colors"
+                          style={{
+                            backgroundColor: (group.start_hole ?? 1) === sh ? '#6BAF8E' : 'transparent',
+                            color: (group.start_hole ?? 1) === sh ? '#0E1A18' : '#8FA69C',
+                          }}
                         >
                           {sh === 1 ? 'OUT' : sh === 10 ? 'IN' : 'EXT'}
                         </button>
@@ -325,7 +336,8 @@ export default function NewEventPage() {
                     <button
                       type="button"
                       onClick={() => removeGroup(gi)}
-                      className="text-[#91855a] text-sm"
+                      className="text-sm"
+                      style={{ color: '#D98E6E' }}
                     >
                       削除
                     </button>
@@ -338,7 +350,8 @@ export default function NewEventPage() {
                     <span
                       key={userId}
                       onClick={() => toggleGroupMember(gi, userId)}
-                      className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-2 py-1 rounded text-xs cursor-pointer"
+                      className="px-2 py-1 rounded text-xs cursor-pointer font-bold"
+                      style={{ backgroundColor: '#1F4A3F', color: '#ffffff' }}
                     >
                       {getMemberName(userId)} ×
                     </span>
@@ -353,7 +366,8 @@ export default function NewEventPage() {
                         key={userId}
                         type="button"
                         onClick={() => toggleGroupMember(gi, userId)}
-                        className="bg-[#d6cabc] text-[#1d3937] px-2 py-1 rounded text-xs border border-[#91855a]"
+                        className="px-2 py-1 rounded text-xs"
+                        style={{ backgroundColor: '#182D28', color: '#8FA69C', border: '1.5px dashed #2E4A43' }}
                       >
                         + {getMemberName(userId)}
                       </button>
@@ -368,9 +382,12 @@ export default function NewEventPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-gradient-to-r from-[#1d3937] to-[#195042] text-white py-3 rounded-lg font-bold text-base disabled:opacity-50"
+            className="w-full flex items-center justify-center disabled:opacity-50"
+            style={{ height: '62px', borderRadius: '16px', backgroundColor: '#6BAF8E' }}
           >
-            {submitting ? '作成中...' : 'イベントを作成'}
+            <span style={{ fontSize: '20px', fontWeight: 900, color: '#0E1A18' }}>
+              {submitting ? '作成中...' : 'イベントを作成'}
+            </span>
           </button>
         </form>
       </main>

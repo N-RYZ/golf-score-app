@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
+
+const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
 
 export default function LoginPage() {
   const [pin, setPin] = useState(['', '', '', '']);
@@ -10,53 +12,18 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const handleDigitChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return;
-
-    const newPin = [...pin];
-    newPin[index] = value.slice(-1);
-    setPin(newPin);
-
-    // 次の入力欄にフォーカス
-    if (value && index < 3) {
-      inputRefs.current[index + 1]?.focus();
-    }
-
-    // 4桁揃ったら自動送信
-    if (value && index === 3) {
-      const fullPin = newPin.join('');
-      if (fullPin.length === 4) {
-        handleSubmit(fullPin);
-      }
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !pin[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleSubmit = async (pinCode?: string) => {
-    const code = pinCode || pin.join('');
-    if (code.length !== 4) {
-      setError('4桁のPINを入力してください');
-      return;
-    }
-
+  const handleSubmit = async (pinCode: string) => {
     setError('');
     setIsLoading(true);
 
     try {
-      const success = await login(code);
+      const success = await login(pinCode);
       if (success) {
         router.push('/events');
       } else {
         setError('PINが正しくありません');
         setPin(['', '', '', '']);
-        inputRefs.current[0]?.focus();
       }
     } catch (err) {
       setError(`接続エラー: ${err}`);
@@ -65,9 +32,33 @@ export default function LoginPage() {
     setIsLoading(false);
   };
 
+  const handleDigit = (digit: string) => {
+    if (isLoading) return;
+    const filledCount = pin.filter((d) => d !== '').length;
+    if (filledCount >= 4) return;
+
+    const newPin = [...pin];
+    newPin[filledCount] = digit;
+    setPin(newPin);
+    setError('');
+
+    if (filledCount === 3) {
+      handleSubmit(newPin.join(''));
+    }
+  };
+
+  const handleBackspace = () => {
+    if (isLoading) return;
+    const filledCount = pin.filter((d) => d !== '').length;
+    if (filledCount === 0) return;
+    const newPin = [...pin];
+    newPin[filledCount - 1] = '';
+    setPin(newPin);
+  };
+
   return (
-    <div className="h-dvh flex flex-col bg-[#1d3937]">
-      {/* 画像エリア（残りの高さを埋める・横幅フル） */}
+    <div className="h-dvh flex flex-col" style={{ backgroundColor: '#0E1A18' }}>
+      {/* 画像エリア */}
       <div className="flex-1 relative min-h-0 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -75,43 +66,90 @@ export default function LoginPage() {
           alt="isPrime Golf"
           className="absolute inset-0 w-full h-full object-cover object-top"
         />
-        {/* 下部：PINエリアへのグラデーション */}
-        <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-[#1d3937] to-transparent pointer-events-none" />
+        <div
+          className="absolute inset-x-0 bottom-0 pointer-events-none"
+          style={{
+            height: '42%',
+            background: 'linear-gradient(to top, #0E1A18 12%, rgba(14,26,24,.7) 55%, transparent)',
+          }}
+        />
       </div>
 
-      {/* PINエリア（固定高さ） */}
-      <div className="shrink-0 px-8 pb-12 pt-6 space-y-5">
+      {/* PINエリア */}
+      <div className="shrink-0" style={{ padding: '26px 26px 44px' }}>
         {error && (
-          <div className="bg-red-900/60 border border-red-400 text-white px-4 py-3 rounded text-center text-sm">
+          <div
+            className="mb-4 px-4 py-3 rounded-xl text-center text-sm font-bold"
+            style={{ backgroundColor: '#2A1E1A', color: '#D98E6E', border: '1px solid #7A3B26' }}
+          >
             {error}
           </div>
         )}
 
-        <div>
-          <label className="block text-sm font-medium text-white/80 text-center mb-4">
-            PINコードを入力
-          </label>
-          <div className="flex justify-center gap-3">
-            {pin.map((digit, index) => (
-              <input
-                key={index}
-                ref={(el) => { inputRefs.current[index] = el; }}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handleDigitChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
+        <label
+          className="block text-center mb-4"
+          style={{ fontSize: '17px', fontWeight: 700, color: '#8FA69C' }}
+        >
+          PINコードを入力
+        </label>
+
+        <div className="flex justify-center gap-3 mb-6">
+          {pin.map((digit, index) => (
+            <div
+              key={index}
+              className="font-num flex items-center justify-center"
+              style={{
+                width: '64px',
+                height: '74px',
+                borderRadius: '18px',
+                fontSize: '36px',
+                fontWeight: 800,
+                color: '#ffffff',
+                backgroundColor: digit ? '#1F4A3F' : '#182D28',
+                border: digit ? '2px solid #6BAF8E' : '1.5px solid #2E4A43',
+              }}
+            >
+              {digit}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-3 gap-[10px]">
+          {KEYPAD_KEYS.map((key, i) => {
+            if (key === '') {
+              return <div key={i} />;
+            }
+            if (key === '⌫') {
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={handleBackspace}
+                  disabled={isLoading}
+                  className="flex items-center justify-center active:opacity-70 disabled:opacity-40"
+                  style={{ height: '56px', borderRadius: '16px', backgroundColor: '#182D28' }}
+                >
+                  <span className="font-num" style={{ fontSize: '22px', fontWeight: 700, color: '#8FA69C' }}>⌫</span>
+                </button>
+              );
+            }
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handleDigit(key)}
                 disabled={isLoading}
-                className="w-16 h-16 text-center text-3xl font-bold border-2 border-white/50 rounded-lg bg-white/20 text-white focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-50 backdrop-blur-sm"
-                autoFocus={index === 0}
-              />
-            ))}
-          </div>
+                className="font-num flex items-center justify-center active:opacity-70 disabled:opacity-40"
+                style={{ height: '56px', borderRadius: '16px', backgroundColor: '#182D28', fontSize: '26px', fontWeight: 700, color: '#ffffff' }}
+              >
+                {key}
+              </button>
+            );
+          })}
         </div>
 
         {isLoading && (
-          <p className="text-center text-sm text-white/70">認証中...</p>
+          <p className="text-center text-sm mt-4" style={{ color: '#8FA69C' }}>認証中...</p>
         )}
       </div>
     </div>

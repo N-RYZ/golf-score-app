@@ -106,71 +106,86 @@ export default function CsvPage() {
   if (user?.role !== 'admin') return null;
 
   return (
-    <div className="min-h-screen bg-[#d6cabc]/30">
-      <header className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-4 py-3 flex items-center gap-3">
-        <button onClick={() => router.push('/admin')} className="text-white">
+    <div className="min-h-screen" style={{ backgroundColor: '#0E1A18' }}>
+      <header className="flex items-center gap-3" style={{ backgroundColor: '#12211F', padding: '16px 20px' }}>
+        <button onClick={() => router.push('/admin')} style={{ color: '#ffffff' }}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
             <path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clipRule="evenodd" />
           </svg>
         </button>
-        <h1 className="text-lg font-bold">CSV出力</h1>
+        <h1 style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff' }}>CSV出力</h1>
       </header>
 
-      <main className="p-4 space-y-6">
+      <main className="p-5 space-y-6">
         {/* 期間一括出力 */}
-        <section className="bg-white rounded-lg shadow p-4 space-y-3">
-          <h2 className="font-bold text-[#1d3937]">期間一括出力</h2>
+        <section className="space-y-3" style={{ backgroundColor: '#182D28', borderRadius: '18px', padding: '18px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>期間一括出力</h2>
           <div className="flex gap-2 items-center">
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="flex-1 px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
+              className="flex-1 px-3 py-2 rounded-md text-sm"
+              style={{ backgroundColor: '#12211F', border: '1.5px solid #2E4A43', color: '#E4EDE9' }}
             />
-            <span className="text-[#91855a]">〜</span>
+            <span style={{ color: '#8FA69C' }}>〜</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="flex-1 px-3 py-2 border border-[#d6cabc] rounded-md text-sm text-[#1d3937]"
+              className="flex-1 px-3 py-2 rounded-md text-sm"
+              style={{ backgroundColor: '#12211F', border: '1.5px solid #2E4A43', color: '#E4EDE9' }}
             />
           </div>
           <button
             onClick={downloadBulkCsv}
             disabled={downloading === 'bulk'}
-            className="w-full bg-gradient-to-r from-[#1d3937] to-[#195042] text-white py-2 rounded-md text-sm font-bold disabled:opacity-50"
+            className="w-full flex items-center justify-center disabled:opacity-50"
+            style={{ height: '56px', borderRadius: '16px', backgroundColor: '#BE9B4B' }}
           >
-            {downloading === 'bulk' ? 'ダウンロード中...' : '一括ダウンロード'}
+            <span style={{ fontSize: '18px', fontWeight: 900, color: '#1B1608' }}>
+              {downloading === 'bulk' ? 'ダウンロード中...' : '一括ダウンロード'}
+            </span>
           </button>
         </section>
 
         {/* イベント単位出力 */}
         <section>
-          <h2 className="font-bold text-[#1d3937] mb-3">イベント単位出力</h2>
+          <h2 className="mb-3" style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>イベント単位出力</h2>
           {loading ? (
-            <p className="text-[#91855a] text-sm">読み込み中...</p>
+            <p style={{ color: '#8FA69C' }} className="text-sm">読み込み中...</p>
           ) : events.length === 0 ? (
-            <p className="text-[#91855a] text-sm">イベントがありません</p>
+            <p style={{ color: '#8FA69C' }} className="text-sm">イベントがありません</p>
           ) : (
             <div className="space-y-2">
-              {events.map((event) => (
-                <div
-                  key={event.id}
-                  className="bg-white rounded-lg shadow p-4 flex items-center justify-between"
-                >
-                  <div>
-                    <p className="font-medium text-[#1d3937]">{event.name}</p>
-                    <p className="text-xs text-[#91855a]">{formatDate(event.event_date)}</p>
-                  </div>
-                  <button
-                    onClick={() => downloadEventCsv(event.id)}
-                    disabled={downloading === event.id}
-                    className="bg-gradient-to-r from-[#1d3937] to-[#195042] text-white px-3 py-1 rounded-md text-sm font-bold disabled:opacity-50"
+              {events.map((event) => {
+                const notPlayed = event.status !== 'completed';
+                return (
+                  <div
+                    key={event.id}
+                    className="flex items-center justify-between"
+                    style={{
+                      backgroundColor: notPlayed ? '#141F1D' : '#182D28',
+                      opacity: notPlayed ? 0.6 : 1,
+                      borderRadius: '16px',
+                      padding: '16px',
+                    }}
                   >
-                    {downloading === event.id ? '...' : 'CSV'}
-                  </button>
-                </div>
-              ))}
+                    <div>
+                      <p style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>{event.name}</p>
+                      <p className="font-num" style={{ fontSize: '12px', color: '#8FA69C' }}>{formatDate(event.event_date)}</p>
+                    </div>
+                    <button
+                      onClick={() => downloadEventCsv(event.id)}
+                      disabled={downloading === event.id}
+                      className="font-bold disabled:opacity-50"
+                      style={{ padding: '6px 16px', borderRadius: '999px', fontSize: '13px', backgroundColor: '#1F4A3F', color: '#B9CFC5' }}
+                    >
+                      {downloading === event.id ? '...' : 'CSV'}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>

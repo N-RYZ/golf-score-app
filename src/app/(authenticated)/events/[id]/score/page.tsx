@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useSearchParams } from 'next/navigation';
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, Fragment } from 'react';
 import { useAuth } from '@/lib/auth-context';
 
 type CourseHole = { hole_number: number; par: number };
@@ -21,10 +21,28 @@ type EventInfo = {
   name: string;
   event_date: string;
   status: string;
-  courses: { course_holes: CourseHole[]; nine_names: string[] } | null;
+  courses: { name: string; course_holes: CourseHole[]; nine_names: string[] } | null;
   event_participants: Participant[];
   event_groups: EventGroup[];
   scores: ScoreData[];
+};
+
+const surname = (fullName: string) => fullName.split(/[ 　]/)[0];
+
+const parDiffPill = (diff: number) => {
+  if (diff <= -2) return { bg: '#1B5B44', color: '#8FD9B4', label: diff <= -3 ? `${diff}` : 'EAGLE' };
+  if (diff === -1) return { bg: '#2E6B52', color: '#DFF3E8', label: 'BIRDIE' };
+  if (diff === 0) return { bg: '#25574F', color: '#B9CFC5', label: 'PAR' };
+  if (diff === 1) return { bg: '#B45B3C', color: '#ffffff', label: 'BOGEY' };
+  return { bg: '#7A3B26', color: '#F0C4B2', label: `+${diff}` };
+};
+
+const strokeColor = (strokeVal: number, diffVal: number) => {
+  if (strokeVal <= 0) return '#3E574F';
+  if (diffVal < 0) return '#6BAF8E';
+  if (diffVal === 0) return '#ffffff';
+  if (diffVal === 1) return '#E5B39C';
+  return '#D98E6E';
 };
 
 // ローカルストレージキー
@@ -547,63 +565,14 @@ export default function ScoreInputPage() {
     putts: 2,
   };
 
-  const diff = currentScore.strokes > 0 ? currentScore.strokes - currentPar : 0;
+  const currentGroup = groupId ? event.event_groups.find((g) => g.id === groupId) : null;
+  const nineLabel = startHole === 10 ? 'IN' : startHole === 19 ? 'EXT' : 'OUT';
+  const currentGroupLabel = currentGroup ? `第${currentGroup.group_number}組` : null;
+  const headerSubtitle = [nineLabel, currentGroupLabel, `${currentHoleIdx + 1}/18ホール`]
+    .filter(Boolean)
+    .join(' · ');
 
-  // ランキングテーブル描画（グロス/ネット切り替え対応）
-  const renderRankingContent = (maxHole: number) => {
-    const board = calculateLeaderboard(maxHole);
-    const sorted = [...board].sort((a, b) =>
-      leaderboardTab === 'gross' ? a.gross - b.gross : a.net - b.net
-    );
-    return (
-      <div>
-        <div className="flex border-b border-gray-200 mb-1">
-          {(['gross', 'net'] as const).map(t => (
-            <button
-              key={t}
-              onClick={() => setLeaderboardTab(t)}
-              className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
-                leaderboardTab === t ? 'border-[#22393c] text-[#22393c]' : 'border-transparent text-gray-500'
-              }`}
-            >
-              {t === 'gross' ? 'グロス' : 'ネット'}
-            </button>
-          ))}
-        </div>
-        {sorted.length === 0 ? (
-          <p className="text-center text-gray-500 py-8 text-sm">スコアデータがありません</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-2 py-2 text-center text-gray-700 w-10">#</th>
-                <th className="px-2 py-2 text-left text-gray-700">名前</th>
-                <th className="px-2 py-2 text-center text-gray-500">H</th>
-                <th className={`px-2 py-2 text-center ${leaderboardTab === 'gross' ? 'text-[#22393c] font-bold' : 'text-gray-700'}`}>グロス</th>
-                <th className="px-2 py-2 text-center text-gray-500 text-xs">HC</th>
-                <th className={`px-2 py-2 text-center ${leaderboardTab === 'net' ? 'text-[#22393c] font-bold' : 'text-gray-700'}`}>ネット</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((r, idx) => {
-                const holeLabel = r.holesPlayed >= 18 ? 'F' : `${r.latestHole}`;
-                return (
-                  <tr key={r.player_id} className={`border-t border-gray-200 ${idx === 0 ? 'bg-yellow-50' : idx === 1 ? 'bg-gray-50' : ''}`}>
-                    <td className="px-2 py-2 text-center font-bold text-gray-500">{idx + 1}</td>
-                    <td className="px-2 py-2 font-medium text-gray-900 whitespace-nowrap">{r.name}</td>
-                    <td className={`px-2 py-2 text-center text-xs font-bold ${r.holesPlayed >= 18 ? 'text-green-700' : 'text-gray-400'}`}>{holeLabel}</td>
-                    <td className={`px-2 py-2 text-center font-bold ${leaderboardTab === 'gross' ? 'text-[#22393c]' : 'text-gray-600'}`}>{r.gross}</td>
-                    <td className="px-2 py-2 text-center text-gray-400 text-xs">{r.hc}</td>
-                    <td className={`px-2 py-2 text-center font-bold ${leaderboardTab === 'net' ? 'text-[#22393c]' : 'text-gray-600'}`}>{r.net}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-    );
-  };
+  const diff = currentScore.strokes > 0 ? currentScore.strokes - currentPar : 0;
 
   // リーダーズボードモーダル（フローティングボタンから）
   const renderLeaderboardModal = () => {
@@ -612,130 +581,175 @@ export default function ScoreInputPage() {
       .filter(s => s.strokes > 0 && !s.isDefault)
       .reduce((max, s) => Math.max(max, s.hole_number), 0);
     const displayHole = maxEnteredHole || currentHole;
+    const board = calculateLeaderboard(displayHole);
+    const sorted = [...board].sort((a, b) =>
+      leaderboardTab === 'gross' ? a.gross - b.gross : a.net - b.net
+    );
+
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl w-full max-h-[85vh] flex flex-col">
-          <div className="p-4 border-b border-gray-200 flex items-center justify-between shrink-0">
-            <h2 className="text-lg font-bold text-gray-900">リーダーズボード（{displayHole}H時点）</h2>
-            <button
-              onClick={() => setShowLeaderboard(false)}
-              className="text-gray-400 hover:text-gray-600 text-2xl leading-none w-8 h-8 flex items-center justify-center"
-            >
-              ×
-            </button>
+      <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: '#0E1A18' }}>
+        <div className="shrink-0" style={{ backgroundColor: '#12211F', padding: '18px 20px' }}>
+          <h2 style={{ fontSize: '22px', fontWeight: 900, color: '#ffffff' }}>リーダーズボード</h2>
+          <p style={{ fontSize: '14px', color: '#8FA69C' }}>{displayHole}H時点 · 参加{sorted.length}名</p>
+          <div className="flex gap-2 mt-3">
+            {(['gross', 'net'] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => setLeaderboardTab(t)}
+                className="font-bold"
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: '999px',
+                  fontSize: '13px',
+                  backgroundColor: leaderboardTab === t ? '#6BAF8E' : '#1B322C',
+                  color: leaderboardTab === t ? '#0E1A18' : '#8FA69C',
+                }}
+              >
+                {t === 'gross' ? 'グロス' : 'ネット'}
+              </button>
+            ))}
           </div>
-          <div className="overflow-auto p-4">
-            {renderRankingContent(displayHole)}
-          </div>
+        </div>
+
+        <div className="flex-1 overflow-auto p-4 space-y-2">
+          {sorted.length === 0 ? (
+            <p className="text-center py-8 text-sm" style={{ color: '#8FA69C' }}>スコアデータがありません</p>
+          ) : (
+            sorted.map((r, idx) => {
+              const isFirst = idx === 0;
+              const holeLabel = r.holesPlayed >= 18 ? 'F' : `${r.latestHole}H`;
+              return (
+                <div
+                  key={r.player_id}
+                  className="flex items-center justify-between"
+                  style={{
+                    borderRadius: '14px',
+                    padding: '11px 16px',
+                    backgroundColor: isFirst ? '#1F4A3F' : '#182D28',
+                    border: isFirst ? '1px solid #2E6B52' : '1px solid transparent',
+                  }}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="font-num shrink-0" style={{ fontSize: '24px', fontWeight: 800, color: isFirst ? '#BE9B4B' : '#5C7A70' }}>
+                      {idx + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate" style={{ fontSize: '20px', fontWeight: 700, color: '#ffffff' }}>{r.name}</p>
+                      <p className="font-num truncate" style={{ fontSize: '13px', color: '#8FA69C' }}>
+                        GROSS {r.gross} · HC {r.hc} · {holeLabel}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="font-num shrink-0" style={{ fontSize: '30px', fontWeight: 800, color: isFirst ? '#6BAF8E' : '#C9D8D2' }}>
+                    {leaderboardTab === 'gross' ? r.gross : r.net}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <div className="shrink-0" style={{ padding: '12px 16px' }}>
+          <button
+            onClick={() => setShowLeaderboard(false)}
+            className="w-full flex items-center justify-center"
+            style={{ height: '60px', borderRadius: '16px', backgroundColor: '#182D28' }}
+          >
+            <span style={{ fontSize: '19px', fontWeight: 700, color: '#B9CFC5' }}>← スコア入力に戻る</span>
+          </button>
         </div>
       </div>
     );
   };
 
-  // スコア一覧モーダル（いつでも表示可能）
+  // スコア一覧モーダル（当組メンバーのみ・いつでも表示可能）
   const renderScoreListModal = () => {
     if (!showScoreList) return null;
     const displayHoles = holeSequence;
+    const cols = groupMembers.length || 1;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-auto">
-          <div className="p-4 border-b border-gray-200 sticky top-0 bg-white flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">スコア一覧</h2>
-            <button
-              onClick={() => setShowScoreList(false)}
-              className="text-gray-400 hover:text-gray-600 text-2xl leading-none w-8 h-8 flex items-center justify-center"
-            >
-              ×
-            </button>
-          </div>
+      <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: '#0E1A18' }}>
+        <div className="shrink-0" style={{ backgroundColor: '#12211F', padding: '18px 20px' }}>
+          <h2 style={{ fontSize: '22px', fontWeight: 900, color: '#ffffff' }}>
+            スコア一覧{currentGroupLabel ? `（${currentGroupLabel}）` : ''}
+          </h2>
+          <p style={{ fontSize: '14px', color: '#8FA69C' }}>数字をタップでそのホールを修正</p>
+        </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-3 py-2 text-center font-bold text-gray-900 sticky left-0 bg-gray-100 z-10">
-                    ホール
-                  </th>
-                  {groupMembers.map((member) => (
-                    <th key={member.player_id} className="border border-gray-300 px-3 py-2 text-center font-bold text-gray-900 min-w-[100px]">
-                      {member.players.name}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {displayHoles.map((h) => {
-                  const holePar = holes.find((hole) => hole.hole_number === h)?.par || 4;
-                  return (
-                    <tr key={h} className={h === currentHole ? 'bg-yellow-50' : 'hover:bg-gray-50'}>
-                      <td className="border border-gray-300 px-3 py-2 text-center font-bold text-gray-900 bg-gray-50 sticky left-0 z-10">
-                        <button
-                          onClick={() => { setShowScoreList(false); setCurrentHole(h); }}
-                          className="text-green-700 hover:text-green-900 hover:underline"
-                        >
-                          {h}H
-                        </button>
-                        <div className="text-xs text-gray-600 font-normal">PAR {holePar}</div>
-                      </td>
-                      {groupMembers.map((member) => {
-                        const score = scores[scoreKey(member.player_id, h)];
-                        const strokeVal = score?.strokes || 0;
-                        const puttVal = score?.putts || 0;
-                        const diffVal = strokeVal - holePar;
-                        let bgColor = 'bg-white';
-                        let textColor = 'text-gray-900';
-                        if (strokeVal > 0) {
-                          if (diffVal <= -1) { bgColor = 'bg-blue-50'; textColor = 'text-blue-900'; }
-                          else if (diffVal === 1) { bgColor = 'bg-orange-50'; textColor = 'text-orange-900'; }
-                          else if (diffVal >= 2) { bgColor = 'bg-red-50'; textColor = 'text-red-900'; }
-                        }
-                        return (
-                          <td
-                            key={member.player_id}
-                            onClick={() => { setShowScoreList(false); setSelectedUserId(member.player_id); setCurrentHole(h); }}
-                            className={`border border-gray-300 px-3 py-2 text-center cursor-pointer ${bgColor} hover:ring-2 hover:ring-inset hover:ring-green-600`}
-                          >
-                            <div className={`text-2xl font-bold ${textColor}`}>
-                              {strokeVal > 0 ? `${strokeVal} (${puttVal})` : '-'}
-                            </div>
-                            {strokeVal > 0 && diffVal !== 0 && (
-                              <div className={`text-xs font-semibold ${textColor} mt-1`}>
-                                ({diffVal > 0 ? '+' : ''}{diffVal})
-                              </div>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-                <tr className="bg-green-50 font-bold">
-                  <td className="border-2 border-green-700 px-3 py-3 text-center text-green-900 sticky left-0 bg-green-50 z-10">
-                    合計
-                  </td>
+        <div className="flex-1 overflow-auto">
+          <div style={{ display: 'grid', gridTemplateColumns: `60px repeat(${cols}, 1fr)` }}>
+            <div className="sticky top-0" style={{ backgroundColor: '#1B322C' }} />
+            {groupMembers.map((member) => (
+              <div key={member.player_id} className="sticky top-0 flex items-center justify-center py-2" style={{ backgroundColor: '#1B322C' }}>
+                <span style={{ fontSize: '15px', fontWeight: 700, color: '#E4EDE9' }}>{surname(member.players.name)}</span>
+              </div>
+            ))}
+
+            {displayHoles.map((h, hi) => {
+              const holePar = holes.find((hole) => hole.hole_number === h)?.par || 4;
+              const isCurrent = h === currentHole;
+              const rowBg = isCurrent ? '#1F4A3F' : hi % 2 === 0 ? '#0E1A18' : '#101B19';
+              return (
+                <Fragment key={h}>
+                  <button
+                    onClick={() => { setShowScoreList(false); setCurrentHole(h); }}
+                    className="flex flex-col items-center justify-center py-2"
+                    style={{ backgroundColor: rowBg }}
+                  >
+                    <span className="font-num" style={{ fontSize: '16px', fontWeight: 800, color: '#6BAF8E' }}>{h}</span>
+                    <span style={{ fontSize: '11px', color: '#5C7A70' }}>P{holePar}</span>
+                  </button>
                   {groupMembers.map((member) => {
-                    const total = calculateTotal(member.player_id, 1, 18);
+                    const score = scores[scoreKey(member.player_id, h)];
+                    const strokeVal = score && !score.isDefault ? score.strokes : 0;
+                    const puttVal = score && !score.isDefault ? score.putts : 0;
+                    const diffVal = strokeVal - holePar;
                     return (
-                      <td key={member.player_id} className="border-2 border-green-700 px-3 py-3 text-center">
-                        <div className="text-2xl font-bold text-green-900">{total.strokes || '-'}</div>
-                        <div className="text-xs text-gray-600 mt-1">P: {total.putts || '-'}</div>
-                      </td>
+                      <button
+                        key={member.player_id}
+                        onClick={() => { setShowScoreList(false); setSelectedUserId(member.player_id); setCurrentHole(h); }}
+                        className="flex items-baseline justify-center gap-1 py-2"
+                        style={{ backgroundColor: rowBg }}
+                      >
+                        {strokeVal > 0 ? (
+                          <>
+                            <span className="font-num" style={{ fontSize: '19px', fontWeight: 700, color: strokeColor(strokeVal, diffVal) }}>{strokeVal}</span>
+                            <span className="font-num" style={{ fontSize: '12px', color: '#8FA69C' }}>({puttVal})</span>
+                          </>
+                        ) : (
+                          <span style={{ fontSize: '19px', color: '#3E574F' }}>–</span>
+                        )}
+                      </button>
                     );
                   })}
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                </Fragment>
+              );
+            })}
 
-          <div className="p-4 border-t border-gray-200 sticky bottom-0 bg-white">
-            <button
-              onClick={() => setShowScoreList(false)}
-              className="w-full py-3 px-4 bg-gray-600 text-white font-bold rounded hover:bg-gray-700 active:bg-gray-700"
-            >
-              閉じる
-            </button>
+            <div className="flex items-center justify-center py-3" style={{ backgroundColor: '#2C2A20' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#9A8F72' }}>合計</span>
+            </div>
+            {groupMembers.map((member) => {
+              const total = calculateTotal(member.player_id, 1, 18);
+              return (
+                <div key={member.player_id} className="flex flex-col items-center justify-center py-3" style={{ backgroundColor: '#2C2A20' }}>
+                  <span className="font-num" style={{ fontSize: '22px', fontWeight: 800, color: '#EDE3CB' }}>{total.strokes || '-'}</span>
+                  <span className="font-num" style={{ fontSize: '11px', color: '#9A8F72' }}>P {total.putts || '-'}</span>
+                </div>
+              );
+            })}
           </div>
+        </div>
+
+        <div className="shrink-0" style={{ padding: '12px 16px' }}>
+          <button
+            onClick={() => setShowScoreList(false)}
+            className="w-full flex items-center justify-center"
+            style={{ height: '60px', borderRadius: '16px', backgroundColor: '#182D28' }}
+          >
+            <span style={{ fontSize: '19px', fontWeight: 700, color: '#B9CFC5' }}>← スコア入力に戻る</span>
+          </button>
         </div>
       </div>
     );
@@ -747,316 +761,306 @@ export default function ScoreInputPage() {
 
     const isFront = attestType === 'front';
     const displayHoles = isFront ? holeSequence.slice(0, 9) : holeSequence;
+    const cols = groupMembers.length || 1;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-auto">
-          <div className="p-4 border-b border-gray-200 sticky top-0 bg-white">
-            <h2 className="text-lg font-bold text-gray-900">
-              {isFront ? '前半9ホール アテスト' : '18ホール アテスト'}
-            </h2>
-          </div>
+      <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: '#0E1A18' }}>
+        <div className="shrink-0" style={{ backgroundColor: '#1F4A3F', borderBottom: '1px solid #2E6B52', padding: '18px 20px' }}>
+          <p className="font-num" style={{ fontSize: '13px', fontWeight: 700, color: '#6BAF8E', letterSpacing: '.1em' }}>ATTEST</p>
+          <h2 style={{ fontSize: '24px', fontWeight: 900, color: '#ffffff' }}>
+            {isFront ? '前半9ホール 確認' : '18ホール 確認'}
+          </h2>
+        </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-3 py-2 text-center font-bold text-gray-900 sticky left-0 bg-gray-100 z-10">
-                    ホール
-                  </th>
-                  {groupMembers.map((member) => (
-                    <th key={member.player_id} className="border border-gray-300 px-3 py-2 text-center font-bold text-gray-900 min-w-[100px]">
-                      {member.players.name}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
+        <div className="flex-1 overflow-auto">
+          <div style={{ display: 'grid', gridTemplateColumns: `60px repeat(${cols}, 1fr)` }}>
+            <div className="sticky top-0" style={{ backgroundColor: '#1B322C' }} />
+            {groupMembers.map((member) => (
+              <div key={member.player_id} className="sticky top-0 flex items-center justify-center py-2" style={{ backgroundColor: '#1B322C' }}>
+                <span style={{ fontSize: '15px', fontWeight: 700, color: '#E4EDE9' }}>{surname(member.players.name)}</span>
+              </div>
+            ))}
 
-              <tbody>
-                {displayHoles.map((h) => {
-                  const holePar = holes.find((hole) => hole.hole_number === h)?.par || 4;
+            {displayHoles.map((h, hi) => {
+              const holePar = holes.find((hole) => hole.hole_number === h)?.par || 4;
+              const rowBg = hi % 2 === 0 ? '#0E1A18' : '#101B19';
+              return (
+                <Fragment key={h}>
+                  <button
+                    onClick={() => handleAttestEdit(h)}
+                    className="flex flex-col items-center justify-center py-2"
+                    style={{ backgroundColor: rowBg }}
+                  >
+                    <span className="font-num" style={{ fontSize: '16px', fontWeight: 800, color: '#6BAF8E' }}>{h}</span>
+                    <span style={{ fontSize: '11px', color: '#5C7A70' }}>P{holePar}</span>
+                  </button>
 
-                  return (
-                    <tr key={h} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-3 py-2 text-center font-bold text-gray-900 bg-gray-50 sticky left-0 z-10">
-                        <button
-                          onClick={() => handleAttestEdit(h)}
-                          className="text-green-700 hover:text-green-900 hover:underline"
-                        >
-                          {h}H
-                        </button>
-                        <div className="text-xs text-gray-600 font-normal">
-                          PAR {holePar}
-                        </div>
-                      </td>
-
-                      {groupMembers.map((member) => {
-                        const score = scores[scoreKey(member.player_id, h)];
-                        const strokeVal = score?.strokes || 0;
-                        const puttVal = score?.putts || 0;
-                        const diffVal = strokeVal - holePar;
-                        let bgColor = 'bg-white';
-                        let textColor = 'text-gray-900';
-
-                        if (strokeVal > 0) {
-                          if (diffVal <= -1) {
-                            bgColor = 'bg-blue-50';
-                            textColor = 'text-blue-900';
-                          } else if (diffVal === 1) {
-                            bgColor = 'bg-orange-50';
-                            textColor = 'text-orange-900';
-                          } else if (diffVal >= 2) {
-                            bgColor = 'bg-red-50';
-                            textColor = 'text-red-900';
-                          }
-                        }
-
-                        return (
-                          <td
-                            key={member.player_id}
-                            onClick={() => handleAttestEdit(h, member.player_id)}
-                            className={`border border-gray-300 px-3 py-2 text-center cursor-pointer ${bgColor} hover:ring-2 hover:ring-inset hover:ring-green-600`}
-                          >
-                            <div className={`text-2xl font-bold ${textColor}`}>
-                              {strokeVal > 0 ? `${strokeVal} (${puttVal})` : '-'}
-                            </div>
-                            {strokeVal > 0 && diffVal !== 0 && (
-                              <div className={`text-xs font-semibold ${textColor} mt-1`}>
-                                ({diffVal > 0 ? '+' : ''}{diffVal})
-                              </div>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-
-                <tr className="bg-green-50 font-bold">
-                  <td className="border-2 border-green-700 px-3 py-3 text-center text-green-900 sticky left-0 bg-green-50 z-10">
-                    合計
-                  </td>
                   {groupMembers.map((member) => {
-                    const outTotal = calculateTotal(member.player_id, 1, 9);
-                    const inTotal = calculateTotal(member.player_id, 10, 18);
-                    const fullTotal = {
-                      strokes: outTotal.strokes + inTotal.strokes,
-                      putts: outTotal.putts + inTotal.putts
-                    };
-                    // 前半アテスト: OUTスタートなら1-9合計、INスタートなら10-18合計
-                    const firstHalfTotal = startHole === 1 ? outTotal : inTotal;
+                    const score = scores[scoreKey(member.player_id, h)];
+                    const strokeVal = score?.strokes || 0;
+                    const puttVal = score?.putts || 0;
+                    const diffVal = strokeVal - holePar;
 
                     return (
-                      <td key={member.player_id} className="border-2 border-green-700 px-3 py-3 text-center">
-                        {!isFront && (
-                          <div className="flex justify-center gap-4 mb-2 text-sm">
-                            <div>
-                              <span className="text-gray-600">{event.courses?.nine_names?.[0] || 'OUT'}:</span>{' '}
-                              <span className="text-gray-900">{outTotal.strokes || '-'}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600">{event.courses?.nine_names?.[1] || 'IN'}:</span>{' '}
-                              <span className="text-gray-900">{inTotal.strokes || '-'}</span>
-                            </div>
-                          </div>
+                      <button
+                        key={member.player_id}
+                        onClick={() => handleAttestEdit(h, member.player_id)}
+                        className="flex items-baseline justify-center gap-1 py-2"
+                        style={{ backgroundColor: rowBg }}
+                      >
+                        {strokeVal > 0 ? (
+                          <>
+                            <span className="font-num" style={{ fontSize: '19px', fontWeight: 700, color: strokeColor(strokeVal, diffVal) }}>{strokeVal}</span>
+                            <span className="font-num" style={{ fontSize: '12px', color: '#8FA69C' }}>({puttVal})</span>
+                          </>
+                        ) : (
+                          <span style={{ fontSize: '19px', color: '#3E574F' }}>–</span>
                         )}
-                        <div className="text-2xl font-bold text-green-900">
-                          {isFront ? (firstHalfTotal.strokes || '-') : (fullTotal.strokes || '-')}
-                        </div>
-                        <div className="text-xs text-gray-600 mt-1">
-                          P: {isFront ? (firstHalfTotal.putts || '-') : (fullTotal.putts || '-')}
-                        </div>
-                      </td>
+                      </button>
                     );
                   })}
-                </tr>
-              </tbody>
-            </table>
+                </Fragment>
+              );
+            })}
           </div>
 
-          <div className="p-4 border-t border-gray-200 flex gap-2 sticky bottom-0 bg-white">
-            <button
-              onClick={handleAttestConfirm}
-              className="flex-1 py-3 px-4 bg-[#22393c] text-white font-bold rounded hover:bg-[#1a2c2e] active:bg-[#1a2c2e]"
-            >
-              {isFront ? '確認OK（後半へ）' : '確認OK（完了）'}
-            </button>
+          {/* 集計行 */}
+          <div style={{ display: 'grid', gridTemplateColumns: `60px repeat(${cols}, 1fr)`, backgroundColor: '#2C2A20' }} className="mt-1">
+            <div className="flex items-center justify-center py-3">
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#9A8F72' }}>{isFront ? 'OUT' : '合計'}</span>
+            </div>
+            {groupMembers.map((member) => {
+              const outTotal = calculateTotal(member.player_id, 1, 9);
+              const inTotal = calculateTotal(member.player_id, 10, 18);
+              const fullTotal = {
+                strokes: outTotal.strokes + inTotal.strokes,
+                putts: outTotal.putts + inTotal.putts,
+              };
+              // 前半アテスト: OUTスタートなら1-9合計、INスタートなら10-18合計
+              const firstHalfTotal = startHole === 1 ? outTotal : inTotal;
+              const shown = isFront ? firstHalfTotal : fullTotal;
+
+              return (
+                <div key={member.player_id} className="flex flex-col items-center justify-center py-3">
+                  {!isFront && (
+                    <div className="font-num flex gap-2 mb-1" style={{ fontSize: '11px', color: '#9A8F72' }}>
+                      <span>{event.courses?.nine_names?.[0] || 'OUT'} {outTotal.strokes || '-'}</span>
+                      <span>{event.courses?.nine_names?.[1] || 'IN'} {inTotal.strokes || '-'}</span>
+                    </div>
+                  )}
+                  <span className="font-num" style={{ fontSize: '28px', fontWeight: 800, color: '#EDE3CB' }}>{shown.strokes || '-'}</span>
+                  <span className="font-num" style={{ fontSize: '11px', color: '#9A8F72' }}>P {shown.putts || '-'}</span>
+                </div>
+              );
+            })}
           </div>
+        </div>
+
+        <div className="shrink-0" style={{ padding: '12px 16px' }}>
+          <button
+            onClick={handleAttestConfirm}
+            className="w-full flex items-center justify-center"
+            style={{ height: '64px', borderRadius: '16px', backgroundColor: '#6BAF8E' }}
+          >
+            <span style={{ fontSize: '20px', fontWeight: 900, color: '#0E1A18' }}>
+              {isFront ? '確認OK（後半へ）' : '確認OK（完了）'}
+            </span>
+          </button>
         </div>
       </div>
     );
   };
 
+  const pill = parDiffPill(diff);
+
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-[#cecdb9] select-none">
-      {/* 1. メンバー選択（2行×2列）＋右サイドパネル */}
-      <div className="flex-[2] flex gap-px" style={{ backgroundColor: '#b0a898' }}>
-        <div className="flex-1 grid grid-cols-2 gap-px">
-          {Array.from({ length: 4 }).map((_, i) => {
-            const p = groupMembers[i];
-            if (!p) {
-              return (
-                <div
-                  key={`empty-${i}`}
-                  style={{ backgroundColor: '#d6cabc' }}
-                />
-              );
-            }
-            const memberScore = scores[scoreKey(p.player_id, currentHole)];
-            return (
-              <button
-                key={p.player_id}
-                onClick={() => handleMemberSwitch(p.player_id)}
-                className="pt-3 pb-5 pl-3 font-bold transition-colors relative overflow-hidden flex items-start justify-start text-white"
-                style={{
-                  fontSize: 'min(28px, 6.5vw)',
-                  backgroundColor: selectedUserId === p.player_id ? '#1d3937' : '#d6cabc',
-                }}
-              >
-                {memberScore && !memberScore.isDefault && (
-                  <span
-                    className="absolute bottom-1 right-2 font-black leading-none pointer-events-none"
-                    style={{ fontSize: 'min(42px, 10vw)', opacity: selectedUserId === p.player_id ? 0.35 : 0.7, color: '#ffffff' }}
-                  >
-                    {memberScore.strokes}({memberScore.putts})
-                  </span>
-                )}
-                <span className="relative z-10">{p.players.name}</span>
-              </button>
-            );
-          })}
+    <div className="h-dvh flex flex-col select-none" style={{ backgroundColor: '#0E1A18' }}>
+      {/* ヘッダー */}
+      <div
+        className="flex items-center justify-between gap-3 shrink-0"
+        style={{ backgroundColor: '#12211F', padding: '12px 16px 10px', borderBottom: '1px solid rgba(255,255,255,.08)' }}
+      >
+        <div className="min-w-0">
+          <p className="truncate" style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>{event.courses?.name}</p>
+          <p className="font-num truncate" style={{ fontSize: '12px', color: '#8FA69C' }}>{headerSubtitle}</p>
         </div>
-        {/* 右サイドパネル：一覧・順位 */}
-        <div className="flex flex-col gap-px" style={{ width: 'min(112px, 28vw)' }}>
+        <div className="flex gap-2 shrink-0">
           <button
             onClick={() => setShowScoreList(true)}
-            className="flex-1 flex flex-col items-center justify-center font-bold text-white active:opacity-70"
-            style={{ backgroundColor: '#C49A2D', fontSize: 'min(20px, 5vw)' }}
+            className="flex flex-col items-center justify-center gap-0.5 active:opacity-70"
+            style={{ height: '46px', padding: '0 13px', borderRadius: '13px', backgroundColor: '#2C2A20', color: '#D8C79A' }}
           >
-            一覧
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-[19px] h-[19px]">
+              <path fillRule="evenodd" d="M3 6.75A.75.75 0 013.75 6h16.5a.75.75 0 010 1.5H3.75A.75.75 0 013 6.75zM3 12a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H3.75A.75.75 0 013 12zm0 5.25a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H3.75a.75.75 0 01-.75-.75z" clipRule="evenodd" />
+            </svg>
+            <span style={{ fontSize: '11px', fontWeight: 700 }}>一覧</span>
           </button>
           <button
             onClick={() => { setLeaderboardTab('gross'); setShowLeaderboard(true); }}
-            className="flex-1 flex flex-col items-center justify-center font-bold text-white active:opacity-70"
-            style={{ backgroundColor: '#A65236', fontSize: 'min(20px, 5vw)' }}
+            className="flex flex-col items-center justify-center gap-0.5 active:opacity-70"
+            style={{ height: '46px', padding: '0 13px', borderRadius: '13px', backgroundColor: '#1F4A3F', border: '1.5px solid #6BAF8E', color: '#6BAF8E' }}
           >
-            順位
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-[19px] h-[19px]">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0" />
+            </svg>
+            <span style={{ fontSize: '11px', fontWeight: 700 }}>順位</span>
           </button>
         </div>
       </div>
 
-      {/* 2. 打数エリア */}
-      <div className="flex-[2] flex">
-        <button
-          onClick={() => updateScore('strokes', -1)}
-          disabled={isViewer}
-          className="flex-1 flex items-center justify-center active:opacity-70 disabled:opacity-30"
-          style={{ backgroundColor: '#195042' }}
-        >
-          <span className="text-[min(80px,20vw)] leading-none font-light text-white">
-            −
-          </span>
-        </button>
-
-        <div className="flex-1 flex flex-col items-center justify-center" style={{ backgroundColor: '#556b4e' }}>
-          <span className="text-4xl font-bold mb-2 text-white">打数</span>
-          <span
-            className="font-bold text-white"
-            style={{ fontSize: 'min(100px, 25vw)' }}
-          >
-            {currentScore.strokes}
-          </span>
-          <span
-            className={`text-sm font-bold mt-1 min-h-[20px] ${
-              diff > 0 ? 'text-red-300' : diff < 0 ? 'text-blue-300' : 'text-white/60'
-            }`}
-          >
-            {currentScore.strokes > 0 && diff !== 0 ? `${diff > 0 ? '+' : ''}${diff}` : ''}
-          </span>
-        </div>
-
-        <button
-          onClick={() => updateScore('strokes', 1)}
-          disabled={isViewer}
-          className="flex-1 flex items-center justify-center active:opacity-80 disabled:opacity-30"
-          style={{ backgroundColor: '#195042' }}
-        >
-          <span className="text-[min(80px,20vw)] leading-none text-white font-bold">
-            +
-          </span>
-        </button>
+      {/* 進捗バー */}
+      <div className="shrink-0" style={{ height: '3px', backgroundColor: '#1B322C' }}>
+        <div style={{ height: '100%', width: `${((currentHoleIdx + 1) / 18) * 100}%`, backgroundColor: '#6BAF8E' }} />
       </div>
 
-      {/* 3. パットエリア */}
-      <div className="flex-[2] flex">
-        <button
-          onClick={() => updateScore('putts', -1)}
-          disabled={isViewer}
-          className="flex-1 flex items-center justify-center active:opacity-70 disabled:opacity-30"
-          style={{ backgroundColor: '#91855a' }}
-        >
-          <span className="text-[min(80px,20vw)] leading-none font-light" style={{ color: '#1d3937' }}>
-            −
-          </span>
-        </button>
-
-        <div className="flex-1 flex flex-col items-center justify-center" style={{ backgroundColor: '#b3a78b' }}>
-          <span className="text-4xl font-bold mb-2" style={{ color: '#1d3937' }}>パット</span>
-          <span
-            className="font-bold"
-            style={{ fontSize: 'min(100px, 25vw)', color: '#1d3937' }}
-          >
-            {currentScore.putts}
-          </span>
-        </div>
-
-        <button
-          onClick={() => updateScore('putts', 1)}
-          disabled={isViewer}
-          className="flex-1 flex items-center justify-center active:opacity-80 disabled:opacity-30"
-          style={{ backgroundColor: '#91855a' }}
-        >
-          <span className="text-[min(80px,20vw)] leading-none font-bold" style={{ color: '#1d3937' }}>
-            +
-          </span>
-        </button>
+      {/* メンバー4カード */}
+      <div className="shrink-0 grid grid-cols-2 gap-[10px]" style={{ padding: '14px 14px 0' }}>
+        {Array.from({ length: 4 }).map((_, i) => {
+          const p = groupMembers[i];
+          if (!p) {
+            return <div key={`empty-${i}`} style={{ borderRadius: '14px', backgroundColor: '#141F1D', minHeight: '58px' }} />;
+          }
+          const memberScore = scores[scoreKey(p.player_id, currentHole)];
+          const isSelected = selectedUserId === p.player_id;
+          const strokeDisplay = memberScore && !memberScore.isDefault ? memberScore.strokes : null;
+          return (
+            <button
+              key={p.player_id}
+              onClick={() => handleMemberSwitch(p.player_id)}
+              className="flex items-center justify-between active:opacity-80"
+              style={{
+                borderRadius: '14px',
+                padding: '12px 14px',
+                backgroundColor: isSelected ? '#1F4A3F' : '#182D28',
+                border: isSelected ? '2px solid #6BAF8E' : '2px solid transparent',
+              }}
+            >
+              <span className="truncate" style={{ fontSize: '23px', fontWeight: 700, color: isSelected ? '#ffffff' : '#C9D8D2' }}>
+                {p.players.name}
+              </span>
+              <span className="font-num shrink-0" style={{ fontSize: '30px', fontWeight: 800, color: isSelected ? '#6BAF8E' : '#5C7A70' }}>
+                {strokeDisplay !== null ? strokeDisplay : '–'}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* 4. ホール番号ナビ */}
-      <div className="flex-1 flex">
+      {/* 打数・パット入力エリア */}
+      <div className="flex-1 flex flex-col gap-[10px] min-h-0" style={{ padding: '10px 14px' }}>
+        {/* 打数ブロック */}
+        <div className="flex gap-[10px]" style={{ flex: 1.45 }}>
+          <button
+            onClick={() => updateScore('strokes', -1)}
+            disabled={isViewer}
+            className="shrink-0 flex items-center justify-center active:opacity-70 disabled:opacity-30"
+            style={{ width: '96px', borderRadius: '18px', backgroundColor: '#1B3A32' }}
+          >
+            <span className="font-num leading-none" style={{ fontSize: 'min(76px, 19vw)', fontWeight: 300, color: '#8FD9B4' }}>−</span>
+          </button>
+
+          <div className="flex-1 flex flex-col items-center justify-center relative" style={{ borderRadius: '18px', backgroundColor: '#1F4A3F' }}>
+            <span
+              className="absolute top-3 left-4"
+              style={{ fontSize: '15px', fontWeight: 700, color: '#8FA69C', letterSpacing: '.14em' }}
+            >
+              打数
+            </span>
+            <span className="font-num font-extrabold text-white" style={{ fontSize: 'min(112px, 26vw)', lineHeight: 1 }}>
+              {currentScore.strokes}
+            </span>
+            {currentScore.strokes > 0 && (
+              <span
+                className="font-bold mt-2"
+                style={{ padding: '5px 14px', borderRadius: '999px', fontSize: '15px', backgroundColor: pill.bg, color: pill.color }}
+              >
+                {pill.label}
+              </span>
+            )}
+          </div>
+
+          <button
+            onClick={() => updateScore('strokes', 1)}
+            disabled={isViewer}
+            className="shrink-0 flex items-center justify-center active:opacity-80 disabled:opacity-30"
+            style={{ width: '96px', borderRadius: '18px', backgroundColor: '#2E6B52' }}
+          >
+            <span className="font-num font-semibold leading-none text-white" style={{ fontSize: 'min(72px, 18vw)' }}>+</span>
+          </button>
+        </div>
+
+        {/* パットブロック */}
+        <div className="flex gap-[10px] flex-1">
+          <button
+            onClick={() => updateScore('putts', -1)}
+            disabled={isViewer}
+            className="shrink-0 flex items-center justify-center active:opacity-70 disabled:opacity-30"
+            style={{ width: '96px', borderRadius: '18px', backgroundColor: '#3A3427' }}
+          >
+            <span className="font-num leading-none" style={{ fontSize: 'min(76px, 19vw)', fontWeight: 300, color: '#D8C79A' }}>−</span>
+          </button>
+
+          <div className="flex-1 flex flex-col items-center justify-center relative" style={{ borderRadius: '18px', backgroundColor: '#2C2A20' }}>
+            <span
+              className="absolute top-3 left-4"
+              style={{ fontSize: '15px', fontWeight: 700, color: '#9A8F72', letterSpacing: '.14em' }}
+            >
+              パット
+            </span>
+            <span className="font-num font-extrabold" style={{ fontSize: 'min(80px, 20vw)', lineHeight: 1, color: '#EDE3CB' }}>
+              {currentScore.putts}
+            </span>
+          </div>
+
+          <button
+            onClick={() => updateScore('putts', 1)}
+            disabled={isViewer}
+            className="shrink-0 flex items-center justify-center active:opacity-80 disabled:opacity-30"
+            style={{ width: '96px', borderRadius: '18px', backgroundColor: '#BE9B4B' }}
+          >
+            <span className="font-num font-semibold leading-none" style={{ fontSize: 'min(72px, 18vw)', color: '#1B1608' }}>+</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ホール移動バー */}
+      <div className="shrink-0 flex gap-[10px]" style={{ height: '100px', padding: '0 14px 16px' }}>
         <button
           onClick={() => currentHoleIdx > 0 && handleHoleChange(holeSequence[currentHoleIdx - 1])}
           disabled={currentHoleIdx <= 0}
-          className="flex-1 flex items-center justify-center disabled:opacity-25 active:opacity-60"
-          style={{ backgroundColor: '#d6cabc' }}
+          className="flex items-center justify-center disabled:opacity-25 active:opacity-60"
+          style={{ width: '78px', borderRadius: '18px', backgroundColor: '#182D28' }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-[70px] h-[70px] text-[#1d3937]">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-[38px] h-[38px]" style={{ color: '#8FA69C' }}>
             <path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clipRule="evenodd" />
           </svg>
         </button>
 
-        <div className="flex-1 flex flex-col items-center justify-center" style={{ backgroundColor: '#7a827a' }}>
-          <span className="font-bold text-white" style={{ fontSize: 'min(56px, 14vw)' }}>
-            {currentHole}H
-          </span>
-          <span className="font-bold block -mt-1 text-white/70" style={{ fontSize: 'min(30px, 7vw)' }}>
-            PAR {currentPar}
-          </span>
+        <div className="flex-1 flex items-center justify-center gap-3" style={{ borderRadius: '18px', backgroundColor: '#182D28' }}>
+          <span className="font-num font-extrabold text-white" style={{ fontSize: 'min(44px, 11vw)' }}>{currentHole}</span>
+          <div className="flex flex-col items-start">
+            <span style={{ fontSize: '13px', color: '#8FA69C' }}>
+              {(() => {
+                const nineIdx = Math.floor((currentHole - 1) / 9);
+                return event.courses?.nine_names?.[nineIdx] || (nineIdx === 0 ? 'OUT' : nineIdx === 1 ? 'IN' : `N${nineIdx + 1}`);
+              })()}
+            </span>
+            <span className="font-num font-bold" style={{ fontSize: '19px', color: '#B9CFC5' }}>PAR {currentPar}</span>
+          </div>
         </div>
 
         <button
           onClick={() => handleHoleChange(currentHoleIdx < 17 ? holeSequence[currentHoleIdx + 1] : -1)}
-          className="flex-1 flex items-center justify-center active:opacity-60"
-          style={{ backgroundColor: '#d6cabc', color: '#1d3937', opacity: currentHoleIdx >= 17 ? 0.25 : 1 }}
+          className="flex items-center justify-center active:opacity-60"
+          style={{ width: '78px', borderRadius: '18px', backgroundColor: '#6BAF8E', opacity: currentHoleIdx >= 17 ? 0.25 : 1 }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-[70px] h-[70px] text-[#1d3937]">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-[38px] h-[38px]" style={{ color: '#0E1A18' }}>
             <path fillRule="evenodd" d="M16.28 11.47a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 01-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 011.06-1.06l7.5 7.5z" clipRule="evenodd" />
           </svg>
         </button>
       </div>
 
-
-{/* スコア一覧モーダル */}
+      {/* スコア一覧モーダル */}
       {renderScoreListModal()}
 
       {/* リーダーズボードモーダル */}
