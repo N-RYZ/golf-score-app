@@ -1,10 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
-
-const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
 
 export default function LoginPage() {
   const [pin, setPin] = useState(['', '', '', '']);
@@ -12,48 +10,60 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const handleSubmit = async (pinCode: string) => {
+  const handleDigitChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+
+    const newPin = [...pin];
+    newPin[index] = value.slice(-1);
+    setPin(newPin);
+    setError('');
+
+    // 次の入力欄にフォーカス
+    if (value && index < 3) {
+      inputRefs.current[index + 1]?.focus();
+    }
+
+    // 4桁揃ったら自動送信
+    if (value && index === 3) {
+      const fullPin = newPin.join('');
+      if (fullPin.length === 4) {
+        handleSubmit(fullPin);
+      }
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !pin[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleSubmit = async (pinCode?: string) => {
+    const code = pinCode || pin.join('');
+    if (code.length !== 4) {
+      setError('4桁のPINを入力してください');
+      return;
+    }
+
     setError('');
     setIsLoading(true);
 
     try {
-      const success = await login(pinCode);
+      const success = await login(code);
       if (success) {
         router.push('/events');
       } else {
         setError('PINが正しくありません');
         setPin(['', '', '', '']);
+        inputRefs.current[0]?.focus();
       }
     } catch (err) {
       setError(`接続エラー: ${err}`);
     }
 
     setIsLoading(false);
-  };
-
-  const handleDigit = (digit: string) => {
-    if (isLoading) return;
-    const filledCount = pin.filter((d) => d !== '').length;
-    if (filledCount >= 4) return;
-
-    const newPin = [...pin];
-    newPin[filledCount] = digit;
-    setPin(newPin);
-    setError('');
-
-    if (filledCount === 3) {
-      handleSubmit(newPin.join(''));
-    }
-  };
-
-  const handleBackspace = () => {
-    if (isLoading) return;
-    const filledCount = pin.filter((d) => d !== '').length;
-    if (filledCount === 0) return;
-    const newPin = [...pin];
-    newPin[filledCount - 1] = '';
-    setPin(newPin);
   };
 
   return (
@@ -93,11 +103,20 @@ export default function LoginPage() {
           PINコードを入力
         </label>
 
-        <div className="flex justify-center gap-3 mb-6">
+        <div className="flex justify-center gap-3">
           {pin.map((digit, index) => (
-            <div
+            <input
               key={index}
-              className="font-num flex items-center justify-center"
+              ref={(el) => { inputRefs.current[index] = el; }}
+              type="text"
+              inputMode="numeric"
+              maxLength={1}
+              value={digit}
+              onChange={(e) => handleDigitChange(index, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(index, e)}
+              disabled={isLoading}
+              autoFocus={index === 0}
+              className="font-num text-center focus:outline-none disabled:opacity-50"
               style={{
                 width: '64px',
                 height: '74px',
@@ -108,44 +127,8 @@ export default function LoginPage() {
                 backgroundColor: digit ? '#1F4A3F' : '#182D28',
                 border: digit ? '2px solid #6BAF8E' : '1.5px solid #2E4A43',
               }}
-            >
-              {digit}
-            </div>
+            />
           ))}
-        </div>
-
-        <div className="grid grid-cols-3 gap-[10px]">
-          {KEYPAD_KEYS.map((key, i) => {
-            if (key === '') {
-              return <div key={i} />;
-            }
-            if (key === '⌫') {
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={handleBackspace}
-                  disabled={isLoading}
-                  className="flex items-center justify-center active:opacity-70 disabled:opacity-40"
-                  style={{ height: '56px', borderRadius: '16px', backgroundColor: '#182D28' }}
-                >
-                  <span className="font-num" style={{ fontSize: '22px', fontWeight: 700, color: '#8FA69C' }}>⌫</span>
-                </button>
-              );
-            }
-            return (
-              <button
-                key={i}
-                type="button"
-                onClick={() => handleDigit(key)}
-                disabled={isLoading}
-                className="font-num flex items-center justify-center active:opacity-70 disabled:opacity-40"
-                style={{ height: '56px', borderRadius: '16px', backgroundColor: '#182D28', fontSize: '26px', fontWeight: 700, color: '#ffffff' }}
-              >
-                {key}
-              </button>
-            );
-          })}
         </div>
 
         {isLoading && (
