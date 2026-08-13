@@ -22,10 +22,27 @@ const STATUS_LABELS: Record<string, string> = {
 
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
-const eventTypeLabel = (eventType?: string) => {
-  if (eventType === '2' || eventType === 'major') return 'メジャー大会';
-  if (eventType === '3' || eventType === 'final') return '最終戦';
-  return '通常大会';
+type EventTypeKey = 'major' | 'final' | 'regular';
+
+const EVENT_TYPE_INFO: Record<EventTypeKey, { label: string; accent: string; pillText: string; date: string }> = {
+  major: { label: 'メジャー', accent: '#BE9B4B', pillText: '#12211F', date: '#BE9B4B' },
+  final: { label: '最終戦', accent: '#B45B3C', pillText: '#FFFFFF', date: '#E5B39C' },
+  regular: { label: '通常大会', accent: '#25574F', pillText: '#B9CFC5', date: '#6BAF8E' },
+};
+
+const eventTypeKey = (eventType?: string): EventTypeKey => {
+  if (eventType === '2' || eventType === 'major') return 'major';
+  if (eventType === '3' || eventType === 'final') return 'final';
+  return 'regular';
+};
+
+// 大会種別の見た目（左端カラーバー・種別ピル・日付の色）。終了済みは種別を問わずミュートする
+const eventTypeStyle = (eventType: string | undefined, isCompleted: boolean) => {
+  const info = EVENT_TYPE_INFO[eventTypeKey(eventType)];
+  if (isCompleted) {
+    return { label: info.label, accent: '#2E4A43', pillBg: '#1B322C', pillText: '#8FA69C', date: '#8FA69C' };
+  }
+  return { label: info.label, accent: info.accent, pillBg: info.accent, pillText: info.pillText, date: info.date };
 };
 
 export default function EventsPage() {
@@ -96,6 +113,7 @@ export default function EventsPage() {
               const { md, year, weekday } = dateParts(event.event_date);
               const isCompleted = event.status === 'completed';
               const isFeatured = !isCompleted && index === 0 && filter === 'upcoming';
+              const type = eventTypeStyle(event.event_type, isCompleted);
 
               if (isFeatured) {
                 return (
@@ -106,21 +124,22 @@ export default function EventsPage() {
                     style={{
                       backgroundColor: '#1F4A3F',
                       border: '1px solid #2E6B52',
+                      borderLeft: `6px solid ${type.accent}`,
                       borderRadius: '18px',
-                      padding: '20px',
+                      padding: '18px 20px 20px',
                     }}
                   >
                     <div className="flex items-center justify-between mb-3">
                       <span
                         className="font-bold"
-                        style={{ backgroundColor: '#BE9B4B', color: '#12211F', fontSize: '13px', padding: '3px 10px', borderRadius: '999px' }}
+                        style={{ backgroundColor: type.pillBg, color: type.pillText, fontSize: '13px', padding: '5px 12px', borderRadius: '999px' }}
                       >
-                        {eventTypeLabel(event.event_type)}
+                        {type.label}
                       </span>
                       <span style={{ fontSize: '13px', color: '#8FA69C' }}>{STATUS_LABELS[event.status]}</span>
                     </div>
                     <div className="flex items-baseline gap-2 mb-1">
-                      <span className="font-num" style={{ fontSize: '44px', fontWeight: 800, color: '#6BAF8E', lineHeight: 1 }}>{md}</span>
+                      <span className="font-num" style={{ fontSize: '44px', fontWeight: 800, color: type.date, lineHeight: 1 }}>{md}</span>
                       <span style={{ fontSize: '15px', color: '#8FA69C' }}>{year} ({weekday})</span>
                     </div>
                     <p style={{ fontSize: '24px', fontWeight: 900, color: '#ffffff' }}>{event.name}</p>
@@ -141,19 +160,26 @@ export default function EventsPage() {
                   style={{
                     backgroundColor: isCompleted ? '#141F1D' : '#182D28',
                     opacity: isCompleted ? 0.75 : 1,
+                    borderLeft: `6px solid ${type.accent}`,
                     borderRadius: '18px',
-                    padding: '18px',
+                    padding: '13px 18px',
                   }}
                 >
                   <div className="shrink-0">
                     <span
                       className="font-num block"
-                      style={{ fontSize: '26px', fontWeight: 800, color: isCompleted ? '#8FA69C' : '#ffffff' }}
+                      style={{ fontSize: '26px', fontWeight: 800, color: type.date }}
                     >
                       {md}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
+                    <span
+                      className="inline-block font-bold mb-1"
+                      style={{ backgroundColor: type.pillBg, color: type.pillText, fontSize: '12px', padding: '4px 10px', borderRadius: '999px' }}
+                    >
+                      {type.label}
+                    </span>
                     <p
                       className="font-bold truncate"
                       style={{ fontSize: '21px', color: isCompleted ? '#C9D8D2' : '#ffffff' }}
