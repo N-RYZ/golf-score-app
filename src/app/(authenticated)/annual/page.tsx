@@ -56,8 +56,10 @@ export default function TourInfoPage() {
     return `${d.getMonth() + 1}/${d.getDate()}`;
   };
 
-  const leader = pointRankings.find((r) => r.rank === 1);
-  const rest = pointRankings.filter((r) => r.rank !== 1);
+  // 参加0回のメンバーはポイントランキングに出さない
+  const rankedParticipants = pointRankings.filter((r) => r.participation_count > 0);
+  const leader = rankedParticipants[0];
+  const rest = rankedParticipants.slice(1);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0E1A18' }}>
@@ -120,7 +122,7 @@ export default function TourInfoPage() {
             {/* ポイントランキングタブ */}
             {tab === 'points' && (
               <div className="space-y-2">
-                {pointRankings.length === 0 ? (
+                {rankedParticipants.length === 0 ? (
                   <p style={{ color: '#8FA69C' }} className="text-sm">{year}年の成績データがありません</p>
                 ) : (
                   <>
