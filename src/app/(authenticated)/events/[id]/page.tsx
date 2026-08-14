@@ -2,8 +2,18 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { useRouter, useParams } from 'next/navigation';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
+
+// パー差の内訳カテゴリ（選択行のミニサマリーで使用）。パーのみ本数の文字色を白にする
+const SCORE_CATEGORIES: { key: string; label: string; color: string; countColor: string; test: (diff: number) => boolean }[] = [
+  { key: 'eagle', label: 'イーグル以下', color: '#8FD9B4', countColor: '#8FD9B4', test: (d) => d <= -2 },
+  { key: 'birdie', label: 'バーディ', color: '#6BAF8E', countColor: '#6BAF8E', test: (d) => d === -1 },
+  { key: 'par', label: 'パー', color: '#E4EDE9', countColor: '#FFFFFF', test: (d) => d === 0 },
+  { key: 'bogey', label: 'ボギー', color: '#E5B39C', countColor: '#E5B39C', test: (d) => d === 1 },
+  { key: 'double', label: 'ダボ', color: '#D98E6E', countColor: '#D98E6E', test: (d) => d === 2 },
+  { key: 'triple', label: 'トリ以上', color: '#B45B3C', countColor: '#B45B3C', test: (d) => d >= 3 },
+];
 
 type CourseHole = { hole_number: number; par: number };
 type Score = {
@@ -80,6 +90,28 @@ export default function EventDetailPage() {
   const [tab, setTab] = useState<Tab>('scores');
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
   const [liveRankingTab, setLiveRankingTab] = useState<'gross' | 'net'>('gross');
+  const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // 選択行が画面内に収まるようスクロール位置を調整（scrollIntoViewは使わない）
+  useEffect(() => {
+    if (!expandedPlayerId) return;
+    const el = rowRefs.current.get(expandedPlayerId);
+    if (!el) return;
+    requestAnimationFrame(() => {
+      const rect = el.getBoundingClientRect();
+      const topMargin = 12;
+      const bottomMargin = 88;
+      let delta = 0;
+      if (rect.bottom > window.innerHeight - bottomMargin) {
+        delta = rect.bottom - (window.innerHeight - bottomMargin);
+      } else if (rect.top < topMargin) {
+        delta = rect.top - topMargin;
+      }
+      if (delta !== 0) {
+        window.scrollTo({ top: window.scrollY + delta, behavior: 'smooth' });
+      }
+    });
+  }, [expandedPlayerId]);
 
   const fetchEvent = useCallback(async () => {
     const currentYear = new Date().getFullYear();
@@ -216,8 +248,23 @@ export default function EventDetailPage() {
       return sum + (s?.putts || 0);
     }, 0);
 
-  const playerGroupNumber = (playerId: string) =>
-    event.event_groups.find((g) => g.group_members.some((m) => m.player_id === playerId))?.group_number;
+  const breakdownFor = (playerId: string) => {
+    const counts = SCORE_CATEGORIES.map(() => 0);
+    holes.forEach((h) => {
+      const s = getScore(playerId, h.hole_number);
+      if (!s || s.strokes <= 0) return;
+      const diff = s.strokes - h.par;
+      const idx = SCORE_CATEGORIES.findIndex((c) => c.test(diff));
+      if (idx >= 0) counts[idx]++;
+    });
+    return SCORE_CATEGORIES.map((c, i) => ({ ...c, count: counts[i] })).filter((c) => c.count > 0);
+  };
+
+  const netRankFor = (playerId: string) => {
+    const sorted = [...liveRanking].sort((a, b) => a.net - b.net);
+    const idx = sorted.findIndex((r) => r.player_id === playerId);
+    return idx >= 0 ? { rank: idx + 1, total: sorted.length } : null;
+  };
 
   const calcPenalty = (playerId: string) => {
     let total = 0;
@@ -339,40 +386,106 @@ export default function EventDetailPage() {
                 {participants.map((p) => {
                   const outScore = playerTotal(p.player_id, outHoles);
                   const inScore = playerTotal(p.player_id, inHoles);
+                  const grossTotal = outScore + inScore;
                   const penalty = calcPenalty(p.player_id);
                   const isExpanded = expandedPlayerId === p.player_id;
-                  const groupNumber = playerGroupNumber(p.player_id);
+
+                  if (!isExpanded) {
+                    return (
+                      <div key={p.id} style={{ backgroundColor: '#182D28', borderRadius: '14px' }}>
+                        <button
+                          onClick={() => setExpandedPlayerId(p.player_id)}
+                          className="grid w-full items-center text-left"
+                          style={{ gridTemplateColumns: '1fr 54px 54px 58px 62px', padding: '9px 14px' }}
+                        >
+                          <span className="truncate" style={{ fontSize: '20px', fontWeight: 700, color: '#ffffff' }}>{p.players.name}</span>
+                          <span className="font-num text-center" style={{ fontSize: '18px', fontWeight: 700, color: '#8FA69C' }}>{outScore || '-'}</span>
+                          <span className="font-num text-center" style={{ fontSize: '18px', fontWeight: 700, color: '#8FA69C' }}>{inScore || '-'}</span>
+                          <span className="font-num text-center" style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff' }}>{grossTotal || '-'}</span>
+                          <span className="font-num text-center" style={{ fontSize: '17px', color: '#9A8F72' }}>{penalty || '-'}</span>
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  // 選択行（ミニサマリー）
+                  const netEntry = liveRanking.find((r) => r.player_id === p.player_id);
+                  const netScore = netEntry?.net;
+                  const parDiff = grossTotal > 0 ? grossTotal - holes.reduce((s, h) => s + h.par, 0) : null;
+                  const putts = playerPutts(p.player_id, holes);
+                  const rankInfo = netRankFor(p.player_id);
+                  const breakdown = breakdownFor(p.player_id);
+
                   return (
                     <div
                       key={p.id}
-                      style={{ backgroundColor: isExpanded ? '#1F4A3F' : '#182D28', borderRadius: '14px' }}
+                      ref={(el) => { if (el) rowRefs.current.set(p.player_id, el); else rowRefs.current.delete(p.player_id); }}
+                      style={{ backgroundColor: '#1F4A3F', border: '1.5px solid #6BAF8E', borderRadius: '16px', padding: '11px 14px 12px' }}
                     >
                       <button
-                        onClick={() => setExpandedPlayerId(isExpanded ? null : p.player_id)}
-                        className="grid w-full items-center text-left"
-                        style={{ gridTemplateColumns: '1fr 54px 54px 58px 62px', padding: '9px 14px' }}
+                        onClick={() => setExpandedPlayerId(null)}
+                        className="flex items-center justify-between w-full mb-3"
                       >
-                        <span className="truncate" style={{ fontSize: '20px', fontWeight: 700, color: '#ffffff' }}>{p.players.name}</span>
-                        <span className="font-num text-center" style={{ fontSize: '18px', fontWeight: 700, color: '#8FA69C' }}>{outScore || '-'}</span>
-                        <span className="font-num text-center" style={{ fontSize: '18px', fontWeight: 700, color: '#8FA69C' }}>{inScore || '-'}</span>
-                        <span className="font-num text-center" style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff' }}>{(outScore + inScore) || '-'}</span>
-                        <span className="font-num text-center" style={{ fontSize: '17px', color: '#9A8F72' }}>{penalty || '-'}</span>
+                        <span style={{ fontSize: '21px', fontWeight: 700, color: '#ffffff' }}>{p.players.name}</span>
+                        <span className="font-num" style={{ fontSize: '24px', fontWeight: 800, color: '#6BAF8E' }}>{grossTotal || '-'}</span>
                       </button>
-                      {isExpanded && (
-                        <div className="flex items-center justify-between" style={{ padding: '0 14px 10px' }}>
-                          <span className="font-num" style={{ fontSize: '13px', color: '#8FD9B4' }}>
-                            パット計{playerPutts(p.player_id, holes) || '-'}
-                            {groupNumber ? `・第${groupNumber}組` : ''}
+
+                      {/* 4指標タイル */}
+                      <div className="grid grid-cols-4 gap-[7px] mb-3">
+                        <div className="flex flex-col items-center justify-center" style={{ backgroundColor: '#16352E', borderRadius: '12px', padding: '7px 0' }}>
+                          <span style={{ fontSize: '12px', color: '#8FA69C' }}>ネット</span>
+                          <span className="font-num" style={{ fontSize: '24px', fontWeight: 800, color: '#ffffff' }}>{netScore || '-'}</span>
+                        </div>
+                        <div className="flex flex-col items-center justify-center" style={{ backgroundColor: '#16352E', borderRadius: '12px', padding: '7px 0' }}>
+                          <span style={{ fontSize: '12px', color: '#8FA69C' }}>PAR差</span>
+                          <span className="font-num" style={{ fontSize: '24px', fontWeight: 800, color: parDiff !== null && parDiff < 0 ? '#6BAF8E' : '#E5B39C' }}>
+                            {parDiff === null ? '-' : parDiff === 0 ? 'E' : parDiff > 0 ? `+${parDiff}` : parDiff}
                           </span>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); router.push(`/events/${eventId}/players/${p.player_id}`); }}
-                            className="font-bold"
-                            style={{ fontSize: '13px', color: '#6BAF8E' }}
-                          >
-                            18ホール詳細を見る ›
-                          </button>
+                        </div>
+                        <div className="flex flex-col items-center justify-center" style={{ backgroundColor: '#16352E', borderRadius: '12px', padding: '7px 0' }}>
+                          <span style={{ fontSize: '12px', color: '#9A8F72' }}>パット</span>
+                          <span className="font-num" style={{ fontSize: '24px', fontWeight: 800, color: '#EDE3CB' }}>{putts || '-'}</span>
+                        </div>
+                        <div className="flex flex-col items-center justify-center" style={{ backgroundColor: '#16352E', borderRadius: '12px', padding: '7px 0' }}>
+                          <span style={{ fontSize: '12px', color: '#8FA69C' }}>順位</span>
+                          <span className="font-num" style={{ fontSize: '24px', fontWeight: 800, color: '#BE9B4B' }}>
+                            {rankInfo ? rankInfo.rank : '-'}
+                            {rankInfo && <span style={{ fontSize: '13px', color: '#8FA69C' }}>/{rankInfo.total}</span>}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 内訳バー */}
+                      {breakdown.length > 0 && (
+                        <div className="mb-3">
+                          <div className="flex" style={{ height: '9px', borderRadius: '999px', overflow: 'hidden', gap: '2px' }}>
+                            {breakdown.map((b) => (
+                              <div key={b.key} style={{ flex: b.count, backgroundColor: b.color }} />
+                            ))}
+                          </div>
+                          <p className="mt-1" style={{ fontSize: '13px', color: '#8FA69C' }}>
+                            {breakdown.map((b, i) => (
+                              <span key={b.key}>
+                                {i > 0 && ' · '}
+                                {b.label}{' '}
+                                <span className="font-num" style={{ fontWeight: 800, fontSize: '15px', color: b.countColor }}>{b.count}</span>
+                              </span>
+                            ))}
+                          </p>
                         </div>
                       )}
+
+                      {/* 詳細へのボタン */}
+                      <button
+                        onClick={() => router.push(`/events/${eventId}/players/${p.player_id}`)}
+                        className="w-full flex items-center justify-center gap-1.5"
+                        style={{ height: '46px', borderRadius: '13px', backgroundColor: '#16352E', border: '1px solid #2E6B52' }}
+                      >
+                        <span style={{ fontSize: '16px', fontWeight: 700, color: '#6BAF8E' }}>18ホールの詳細を見る</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-[18px] h-[18px]" style={{ color: '#6BAF8E' }}>
+                          <path fillRule="evenodd" d="M8.22 5.22a.75.75 0 011.06 0l6.5 6.5a.75.75 0 010 1.06l-6.5 6.5a.75.75 0 11-1.06-1.06L14.19 12 8.22 6.03a.75.75 0 010-1.06z" clipRule="evenodd" />
+                        </svg>
+                      </button>
                     </div>
                   );
                 })}
