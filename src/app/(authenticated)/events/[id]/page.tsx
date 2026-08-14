@@ -260,10 +260,15 @@ export default function EventDetailPage() {
     return SCORE_CATEGORIES.map((c, i) => ({ ...c, count: counts[i] })).filter((c) => c.count > 0);
   };
 
-  const netRankFor = (playerId: string) => {
-    const sorted = [...liveRanking].sort((a, b) => a.net - b.net);
-    const idx = sorted.findIndex((r) => r.player_id === playerId);
-    return idx >= 0 ? { rank: idx + 1, total: sorted.length } : null;
+  // NET・順位は「当時の適用HC」に基づく確定値のみを表示する。確定済みイベントは
+  // event_results のスナップショットを使い、現在HCを使った再計算は行わない。
+  // 未確定イベントはまだスナップショットが存在しないため「-」を表示する。
+  const netInfoFor = (playerId: string) => {
+    if (event.is_finalized) {
+      const r = results.find((res) => res.player_id === playerId);
+      return r ? { net: r.net_score, rank: r.rank, total: results.length } : null;
+    }
+    return null;
   };
 
   const calcPenalty = (playerId: string) => {
@@ -409,11 +414,9 @@ export default function EventDetailPage() {
                   }
 
                   // 選択行（ミニサマリー）
-                  const netEntry = liveRanking.find((r) => r.player_id === p.player_id);
-                  const netScore = netEntry?.net;
+                  const netInfo = netInfoFor(p.player_id);
                   const parDiff = grossTotal > 0 ? grossTotal - holes.reduce((s, h) => s + h.par, 0) : null;
                   const putts = playerPutts(p.player_id, holes);
-                  const rankInfo = netRankFor(p.player_id);
                   const breakdown = breakdownFor(p.player_id);
 
                   return (
@@ -434,7 +437,7 @@ export default function EventDetailPage() {
                       <div className="grid grid-cols-4 gap-[7px] mb-3">
                         <div className="flex flex-col items-center justify-center" style={{ backgroundColor: '#16352E', borderRadius: '12px', padding: '7px 0' }}>
                           <span style={{ fontSize: '12px', color: '#8FA69C' }}>ネット</span>
-                          <span className="font-num" style={{ fontSize: '24px', fontWeight: 800, color: '#ffffff' }}>{netScore || '-'}</span>
+                          <span className="font-num" style={{ fontSize: '24px', fontWeight: 800, color: '#ffffff' }}>{netInfo ? netInfo.net : '-'}</span>
                         </div>
                         <div className="flex flex-col items-center justify-center" style={{ backgroundColor: '#16352E', borderRadius: '12px', padding: '7px 0' }}>
                           <span style={{ fontSize: '12px', color: '#8FA69C' }}>PAR差</span>
@@ -449,8 +452,8 @@ export default function EventDetailPage() {
                         <div className="flex flex-col items-center justify-center" style={{ backgroundColor: '#16352E', borderRadius: '12px', padding: '7px 0' }}>
                           <span style={{ fontSize: '12px', color: '#8FA69C' }}>順位</span>
                           <span className="font-num" style={{ fontSize: '24px', fontWeight: 800, color: '#BE9B4B' }}>
-                            {rankInfo ? rankInfo.rank : '-'}
-                            {rankInfo && <span style={{ fontSize: '13px', color: '#8FA69C' }}>/{rankInfo.total}</span>}
+                            {netInfo ? netInfo.rank : '-'}
+                            {netInfo && <span style={{ fontSize: '13px', color: '#8FA69C' }}>/{netInfo.total}</span>}
                           </span>
                         </div>
                       </div>

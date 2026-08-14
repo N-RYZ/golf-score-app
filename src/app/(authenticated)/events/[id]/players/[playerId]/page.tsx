@@ -12,11 +12,14 @@ type EventDetail = {
   id: string;
   name: string;
   event_date: string;
+  is_finalized?: boolean;
   courses: { name: string; course_holes: CourseHole[] } | null;
   event_participants: Participant[];
   event_groups: EventGroup[];
   scores: Score[];
 };
+
+type OfficialResult = { player_id: string; net_score: number; rank: number; handicap_before: number };
 
 type TrendPoint = { eventId: string; date: string; name: string; gross: number };
 
@@ -50,7 +53,7 @@ export default function PlayerScoreDetailPage() {
 
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [handicaps, setHandicaps] = useState<Record<string, number>>({});
+  const [officialResults, setOfficialResults] = useState<OfficialResult[]>([]);
   const [trend, setTrend] = useState<TrendPoint[]>([]);
   const [tab, setTab] = useState<Tab>('holes');
 
@@ -66,19 +69,18 @@ export default function PlayerScoreDetailPage() {
     fetchEvent();
   }, [fetchEvent]);
 
-  // 全参加者のハンデ（グロス/ネット順位の算出に使用）
+  // 確定済みイベントの公式結果（当時の適用HC・NET・順位のスナップショット）。
+  // 現在HCを使った再計算は行わない — 確定後は event_results が唯一の正。
   useEffect(() => {
-    if (!event) return;
-    const year = new Date(event.event_date).getFullYear();
-    fetch(`/api/admin/players?year=${year}`)
+    if (!event?.is_finalized) {
+      setOfficialResults([]);
+      return;
+    }
+    fetch(`/api/events/${eventId}/finalize`)
       .then((r) => (r.ok ? r.json() : []))
-      .then((players: { id: string; current_handicap: number | null }[]) => {
-        const map: Record<string, number> = {};
-        players.forEach((p) => { map[p.id] = p.current_handicap ?? 0; });
-        setHandicaps(map);
-      })
-      .catch(() => {});
-  }, [event]);
+      .then((data: OfficialResult[]) => setOfficialResults(data))
+      .catch(() => setOfficialResults([]));
+  }, [event, eventId]);
 
   // 年間推移（同じ年の確定済みイベントでのこの人のグロス推移）
   useEffect(() => {
@@ -144,12 +146,10 @@ export default function PlayerScoreDetailPage() {
   const outTotal = rangeTotal(outHoles);
   const inTotal = rangeTotal(inHoles);
   const grossTotal = outTotal + inTotal;
-  const myHandicap = handicaps[playerId] ?? 0;
-  const netTotal = grossTotal > 0 ? grossTotal - myHandicap : null;
   const puttTotal = rangePutts(holes);
 
-  // 全参加者のグロス・ネットからこの人の順位を算出
-  const allStats = event.event_participants
+  // グロスはハンデに依存しないので確定前後を問わず常にその場で計算してよい
+  const allGrossStats = event.event_participants
     .map((p) => {
       let gross = 0;
       let played = 0;
@@ -157,18 +157,22 @@ export default function PlayerScoreDetailPage() {
         const s = event.scores.find((sc) => sc.player_id === p.player_id && sc.hole_number === h.hole_number);
         if (s && s.strokes > 0) { gross += s.strokes; played++; }
       });
-      const hc = handicaps[p.player_id] ?? 0;
-      return { player_id: p.player_id, gross, net: gross > 0 ? gross - hc : 0, played };
+      return { player_id: p.player_id, gross, played };
     })
     .filter((r) => r.played > 0);
 
-  const rankOf = (sortKey: 'gross' | 'net') => {
-    const sorted = [...allStats].sort((a, b) => a[sortKey] - b[sortKey]);
+  const grossRank = (() => {
+    const sorted = [...allGrossStats].sort((a, b) => a.gross - b.gross);
     const idx = sorted.findIndex((r) => r.player_id === playerId);
     return idx >= 0 ? { rank: idx + 1, total: sorted.length } : null;
-  };
-  const grossRank = rankOf('gross');
-  const netRank = rankOf('net');
+  })();
+
+  // NET・適用HC・ネット順位は「当時の適用HC」に基づく確定値のみを表示する。
+  // 未確定イベントはまだスナップショットが存在しないため -（null）のまま。
+  const official = officialResults.find((r) => r.player_id === playerId);
+  const appliedHandicap = event.is_finalized ? official?.handicap_before ?? null : null;
+  const netTotal = event.is_finalized ? official?.net_score ?? null : null;
+  const netRank = event.is_finalized && official ? { rank: official.rank, total: officialResults.length } : null;
 
   // スコア内訳（イーグル以下〜トリ以上）
   const breakdown = SCORE_CATEGORIES.map((c) => {
@@ -233,12 +237,14 @@ export default function PlayerScoreDetailPage() {
               <h1 className="truncate" style={{ fontSize: '24px', fontWeight: 900, color: '#ffffff' }}>
                 {participant?.players.name || '選手'}
               </h1>
-              <span
-                className="font-num shrink-0 font-bold"
-                style={{ backgroundColor: '#1F4A3F', color: '#6BAF8E', fontSize: '12px', padding: '3px 9px', borderRadius: '999px' }}
-              >
-                HC {myHandicap.toFixed(1)}
-              </span>
+              {appliedHandicap !== null && (
+                <span
+                  className="font-num shrink-0 font-bold"
+                  style={{ backgroundColor: '#1F4A3F', color: '#6BAF8E', fontSize: '12px', padding: '3px 9px', borderRadius: '999px' }}
+                >
+                  HC {appliedHandicap.toFixed(1)}
+                </span>
+              )}
             </div>
             <p className="truncate" style={{ fontSize: '14px', color: '#8FA69C' }}>
               {event.name}
